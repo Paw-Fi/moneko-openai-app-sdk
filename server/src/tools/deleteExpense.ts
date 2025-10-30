@@ -39,13 +39,11 @@ export function registerDeleteExpense(server: Server, widgetUris: { expenseTable
         content: [
           { type: 'text', text: 'Expense deleted successfully.' },
         ],
-        structuredContent: {
-          component: 'ExpenseTableCompact',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Deleting expense…',
           'openai/toolInvocation/invoked': 'Expense deleted.',
         },
@@ -60,6 +58,7 @@ export function registerDeleteExpense(server: Server, widgetUris: { expenseTable
 export function deleteExpenseTool(widgetUris: { expenseTable: string }) {
   return {
     name: 'moneko.delete_expense',
+    title: 'Delete Expense',
     description: 'Use this when the user asks to delete a specific previously listed expense.',
     inputSchema: {
       type: 'object',
@@ -76,13 +75,20 @@ export function deleteExpenseTool(widgetUris: { expenseTable: string }) {
             endDate: { type: 'string' },
             currency: { type: 'string' },
           },
+          additionalProperties: false,
         },
       },
       required: ['expenseId'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Deleting expense…',
       'openai/toolInvocation/invoked': 'Expense deleted.',
     },

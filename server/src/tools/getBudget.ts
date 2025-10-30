@@ -19,19 +19,20 @@ export function registerGetBudget(server: Server, widgetUris: { budget: string }
 
       const props = toBudgetStatusCard(payload);
 
+      // AUDIT FIX: structuredContent should be props directly, not wrapped
+      // The host hydrates window.openai.toolOutput with structuredContent
+      // Widget selection is handled by _meta['openai/outputTemplate']
       return {
         content: [
           { type: 'text', text: 'Here\'s your current budget status.' },
         ],
-        structuredContent: {
-          component: 'BudgetStatusCard',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.budget,
           'openai/widgetAccessible': true,
           'openai/toolInvocation/invoking': 'Checking your budget…',
           'openai/toolInvocation/invoked': 'Budget status ready.',
+          'openai/resultCanProduceWidget': true,
         },
       };
     }
@@ -44,6 +45,7 @@ export function registerGetBudget(server: Server, widgetUris: { budget: string }
 export function getBudgetTool(widgetUris: { budget: string }) {
   return {
     name: 'moneko.get_budget',
+    title: 'Get Budget Status',
     description: 'Call this when the user asks how much money they have left today or how they\'re pacing this month. Always include date and currency if known.',
     inputSchema: {
       type: 'object',
@@ -62,10 +64,16 @@ export function getBudgetTool(widgetUris: { budget: string }) {
         },
       },
       required: ['date'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.budget,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Checking your budget…',
       'openai/toolInvocation/invoked': 'Budget status ready.',
     },

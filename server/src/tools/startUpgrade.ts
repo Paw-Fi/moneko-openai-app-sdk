@@ -46,10 +46,16 @@ export function registerStartUpgrade(server: Server) {
 export function startUpgradeTool() {
   return {
     name: 'moneko.start_upgrade',
+    title: 'Start Upgrade',
     description: 'Use this when the user taps an upgrade button to enable proactive alerts / advanced budgeting. Returns a secure checkout or upgrade link.',
     inputSchema: {
       type: 'object',
       properties: {},
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
     _meta: {
       'openai/toolInvocation/invoking': 'Generating upgrade link…',

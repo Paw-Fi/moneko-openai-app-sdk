@@ -33,13 +33,11 @@ export function registerSaveExpense(server: Server, widgetUris: { budget: string
         content: [
           { type: 'text', text: `Expense saved successfully. Here's your updated budget.` },
         ],
-        structuredContent: {
-          component: 'BudgetStatusCard',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.budget,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Saving expense…',
           'openai/toolInvocation/invoked': 'Expense saved.',
         },
@@ -54,6 +52,7 @@ export function registerSaveExpense(server: Server, widgetUris: { budget: string
 export function saveExpenseTool(widgetUris: { budget: string }) {
   return {
     name: 'moneko.save_expense',
+    title: 'Save Expense',
     description: 'Use this when the user says they bought/spent/paid something and wants it recorded. Requires amount, category, currency, and date. After saving, return the user\'s updated budget pacing.',
     inputSchema: {
       type: 'object',
@@ -88,10 +87,16 @@ export function saveExpenseTool(widgetUris: { budget: string }) {
         },
       },
       required: ['amount', 'category', 'currency', 'date'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.budget,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Saving expense…',
       'openai/toolInvocation/invoked': 'Expense saved.',
     },

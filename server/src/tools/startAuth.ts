@@ -46,10 +46,16 @@ export function registerStartAuth(server: Server) {
 export function startAuthTool() {
   return {
     name: 'moneko.start_auth',
+    title: 'Start Authentication',
     description: 'Use this when the user taps "Save this in Moneko" and wants to convert from a guest profile to a full Moneko account. Returns a secure link to open externally.',
     inputSchema: {
       type: 'object',
       properties: {},
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
     _meta: {
       'openai/toolInvocation/invoking': 'Generating claim link…',

@@ -2,10 +2,12 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ListToolsRequestSchema,
   CallToolRequestSchema,
   type ListResourcesRequest,
   type ReadResourceRequest,
+  type ListResourceTemplatesRequest,
   type ListToolsRequest,
   type CallToolRequest,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -58,6 +60,11 @@ export function createMonekoServer(): Server {
           name: w.name,
           description: w.description,
           mimeType: 'text/html+skybridge',
+          _meta: {
+            'openai/outputTemplate': w.uri,
+            'openai/widgetAccessible': true,
+            'openai/resultCanProduceWidget': true,
+          },
         })),
       };
     }
@@ -78,8 +85,32 @@ export function createMonekoServer(): Server {
             uri: widget.uri,
             mimeType: 'text/html+skybridge',
             text: widget.html,
+            _meta: {
+              'openai/outputTemplate': widget.uri,
+              'openai/widgetAccessible': true,
+              'openai/resultCanProduceWidget': true,
+            },
           },
         ],
+      };
+    }
+  );
+
+  server.setRequestHandler(
+    ListResourceTemplatesRequestSchema,
+    async (_request: ListResourceTemplatesRequest) => {
+      return {
+        resourceTemplates: widgets.map((w) => ({
+          uriTemplate: w.uri,
+          name: w.name,
+          description: w.description,
+          mimeType: 'text/html+skybridge',
+          _meta: {
+            'openai/outputTemplate': w.uri,
+            'openai/widgetAccessible': true,
+            'openai/resultCanProduceWidget': true,
+          },
+        })),
       };
     }
   );

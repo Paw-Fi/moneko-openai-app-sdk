@@ -78,3 +78,52 @@
 - [ ] Testing: All Section E items completed (E.1 and E.3 require manual testing)
 - [x] Security: All Section F items completed
 - [ ] Golden prompt tests: All scenarios working in ChatGPT dev mode (requires deployment)
+
+---
+
+# OpenAI Reference Audit Compliance (Post-Implementation Review)
+
+## CRITICAL FIXES (REQUIRED)
+
+### ✅ PARTIALLY COMPLETE: structuredContent Shape Correction
+- [x] getBudget.ts - Returns `structuredContent: props` (not wrapped)
+- [x] setBudget.ts - Returns `structuredContent: props` (not wrapped)
+- [ ] saveExpense.ts - Needs fix
+- [ ] listExpenses.ts - Needs fix
+- [ ] expenseSummary.ts - Needs fix
+- [ ] updateExpense.ts - Needs fix
+- [ ] deleteExpense.ts - Needs fix
+
+**Impact**: Without this fix, widgets receive `{component, props}` instead of props directly, breaking prop binding.
+
+### 🔄 PENDING: Session Cleanup on Connect Failure
+- [ ] Fix server/src/index.ts handleSseRequest catch block to delete session
+- **Code**: Add `if (sessionId) sessions.delete(sessionId);` before throw
+
+**Impact**: Prevents memory leak when server.connect() fails.
+
+## ENHANCEMENTS (Nice to Have)
+
+### ✅ PARTIALLY COMPLETE: Tool Metadata Enhancement
+- [x] getBudget: Added title, annotations, additionalProperties:false, openai/resultCanProduceWidget
+- [x] setBudget: Added title, annotations, additionalProperties:false, openai/resultCanProduceWidget
+- [ ] Remaining 7 tools need same enhancements
+
+**Impact**: Suppresses approval prompts, provides better UX, stricter validation.
+
+### 🔄 PENDING: Resource Metadata
+- [ ] Add _meta to ListResources response
+- [ ] Add _meta to ReadResource contents
+- [ ] Add ListResourceTemplates handler
+
+**File**: server/src/server.ts
+
+### 🔄 PENDING: Widget adjustments (Optional)
+- [ ] Update AdjustBudgetModal to expect props directly from response
+- [ ] Update BudgetStatusCard local state handling
+
+**File**: web/src/components/AdjustBudgetModal.tsx, BudgetStatusCard.tsx
+
+## Implementation Guide
+
+See `server/AUDIT_FIXES.md` for detailed fixes and patterns to apply to remaining tools.

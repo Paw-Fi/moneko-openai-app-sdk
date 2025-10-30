@@ -23,13 +23,11 @@ export function registerListExpenses(server: Server, widgetUris: { expenseTable:
         content: [
           { type: 'text', text: 'Here are your expenses.' },
         ],
-        structuredContent: {
-          component: 'ExpenseTableCompact',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Loading your expenses…',
           'openai/toolInvocation/invoked': 'Expenses loaded.',
         },
@@ -44,6 +42,7 @@ export function registerListExpenses(server: Server, widgetUris: { expenseTable:
 export function listExpensesTool(widgetUris: { expenseTable: string }) {
   return {
     name: 'moneko.list_expenses',
+    title: 'List Expenses',
     description: 'Use this to show all transactions for a given time range. Provide startDate and endDate. Include currency when available.',
     inputSchema: {
       type: 'object',
@@ -65,10 +64,16 @@ export function listExpensesTool(widgetUris: { expenseTable: string }) {
           description: 'Maximum number of expenses to return (1-200)',
         },
       },
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Loading your expenses…',
       'openai/toolInvocation/invoked': 'Expenses loaded.',
     },

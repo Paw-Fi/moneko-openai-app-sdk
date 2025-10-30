@@ -50,7 +50,9 @@ export function useOpenAiGlobal<K extends keyof OpenAiGlobals>(
 /**
  * Get widget props from toolOutput
  *
- * This hook reads props from the MCP server's structuredContent.props
+ * AUDIT FIX: The host hydrates window.openai.toolOutput with structuredContent directly.
+ * MCP server returns structuredContent as the props object (not wrapped).
+ * Widget selection is handled by _meta['openai/outputTemplate'].
  *
  * @param defaultState - Default props to use if toolOutput is not available
  * @returns Widget props

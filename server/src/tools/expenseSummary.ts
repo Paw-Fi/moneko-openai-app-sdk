@@ -23,13 +23,11 @@ export function registerExpenseSummary(server: Server, widgetUris: { categoryBre
         content: [
           { type: 'text', text: 'Here\'s your spending breakdown by category.' },
         ],
-        structuredContent: {
-          component: 'CategoryBreakdownChart',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.categoryBreakdown,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Analyzing your spending…',
           'openai/toolInvocation/invoked': 'Analysis complete.',
         },
@@ -44,6 +42,7 @@ export function registerExpenseSummary(server: Server, widgetUris: { categoryBre
 export function expenseSummaryTool(widgetUris: { categoryBreakdown: string }) {
   return {
     name: 'moneko.expense_summary',
+    title: 'Get Expense Summary',
     description: 'Use this when the user asks where their money went in a given period, e.g. "why am I broke?" or "show October spending". Requires endDate. startDate optional.',
     inputSchema: {
       type: 'object',
@@ -66,10 +65,16 @@ export function expenseSummaryTool(widgetUris: { categoryBreakdown: string }) {
         },
       },
       required: ['endDate'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.categoryBreakdown,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Analyzing your spending…',
       'openai/toolInvocation/invoked': 'Analysis complete.',
     },

@@ -29,17 +29,16 @@ export function registerSetBudget(server: Server, widgetUris: { budget: string }
 
       const props = toBudgetStatusCard(budgetPayload);
 
+      // AUDIT FIX: Return props directly in structuredContent
       return {
         content: [
           { type: 'text', text: 'Budget updated successfully. Here\'s your new status.' },
         ],
-        structuredContent: {
-          component: 'BudgetStatusCard',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.budget,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Updating your budget…',
           'openai/toolInvocation/invoked': 'Budget updated.',
         },
@@ -54,6 +53,7 @@ export function registerSetBudget(server: Server, widgetUris: { budget: string }
 export function setBudgetTool(widgetUris: { budget: string }) {
   return {
     name: 'moneko.set_budget',
+    title: 'Set Daily Budget',
     description: 'Use this when the user asks to set or change their daily budget. Requires amount (major units), date, and currency. After setting, show updated pacing.',
     inputSchema: {
       type: 'object',
@@ -72,10 +72,16 @@ export function setBudgetTool(widgetUris: { budget: string }) {
         },
       },
       required: ['amount', 'date', 'currency'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.budget,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Updating your budget…',
       'openai/toolInvocation/invoked': 'Budget updated.',
     },

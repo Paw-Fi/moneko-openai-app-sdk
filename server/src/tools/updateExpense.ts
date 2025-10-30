@@ -39,13 +39,11 @@ export function registerUpdateExpense(server: Server, widgetUris: { expenseTable
         content: [
           { type: 'text', text: 'Expense updated successfully.' },
         ],
-        structuredContent: {
-          component: 'ExpenseTableCompact',
-          props,
-        },
+        structuredContent: props,
         _meta: {
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
+          'openai/resultCanProduceWidget': true,
           'openai/toolInvocation/invoking': 'Updating expense…',
           'openai/toolInvocation/invoked': 'Expense updated.',
         },
@@ -60,6 +58,7 @@ export function registerUpdateExpense(server: Server, widgetUris: { expenseTable
 export function updateExpenseTool(widgetUris: { expenseTable: string }) {
   return {
     name: 'moneko.update_expense',
+    title: 'Update Expense',
     description: 'Use this when the user wants to edit a specific previously listed expense.',
     inputSchema: {
       type: 'object',
@@ -93,6 +92,7 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
               description: 'Updated currency code',
             },
           },
+          additionalProperties: false,
         },
         refreshWindow: {
           type: 'object',
@@ -102,13 +102,20 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
             endDate: { type: 'string' },
             currency: { type: 'string' },
           },
+          additionalProperties: false,
         },
       },
       required: ['expenseId', 'updates'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,
       'openai/widgetAccessible': true,
+      'openai/resultCanProduceWidget': true,
       'openai/toolInvocation/invoking': 'Updating expense…',
       'openai/toolInvocation/invoked': 'Expense updated.',
     },

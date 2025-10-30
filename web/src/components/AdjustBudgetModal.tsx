@@ -69,13 +69,18 @@ export function AdjustBudgetModal({
         date,
       });
 
-      // Parse the response - it should contain structuredContent with updated props
+      // AUDIT FIX: After server fix, structuredContent IS the props directly
+      // The host will automatically update window.openai.toolOutput with the new props
+      // We parse response.result to optionally update local state for smoother UX
       const result = JSON.parse(response.result);
-      if (result.structuredContent?.props) {
-        onSuccess(result.structuredContent.props);
+      if (result.structuredContent) {
+        // structuredContent is now the props object directly (not wrapped)
+        onSuccess(result.structuredContent);
         onClose();
       } else {
-        setError("Unexpected response format");
+        // If no structuredContent, host will still update toolOutput automatically
+        // Close modal and let host-driven re-render handle it
+        onClose();
       }
     } catch (err) {
       setError(

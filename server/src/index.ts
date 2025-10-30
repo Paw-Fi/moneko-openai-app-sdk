@@ -25,18 +25,22 @@ const postPath = '/mcp/messages';
 async function handleSseRequest(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
+  let sessionId: string | undefined;
+  let server: Server | undefined;
+  let transport: SSEServerTransport | undefined;
+
   try {
-    const server = createMonekoServer();
-    const transport = new SSEServerTransport(postPath, res);
-    const sessionId = transport.sessionId;
+    server = createMonekoServer();
+    transport = new SSEServerTransport(postPath, res);
+    sessionId = transport.sessionId;
 
     sessions.set(sessionId, { server, transport });
 
     logger.info({ sessionId }, 'New SSE session established');
 
     transport.onclose = async () => {
-      sessions.delete(sessionId);
-      await server.close();
+      if (sessionId) sessions.delete(sessionId);
+      if (server) await server.close();
       logger.info({ sessionId }, 'SSE session closed');
     };
 
@@ -46,7 +50,8 @@ async function handleSseRequest(res: ServerResponse) {
 
     await server.connect(transport);
   } catch (error) {
-    logger.error({ error }, 'Failed to start SSE session');
+    logger.error({ error, sessionId }, 'Failed to start SSE session');
+    if (sessionId) sessions.delete(sessionId);
     if (!res.headersSent) {
       res.writeHead(500).end('Failed to establish SSE connection');
     }
