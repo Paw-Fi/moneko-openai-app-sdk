@@ -1,0 +1,194 @@
+/**
+ * CategoryBreakdownChart Styles
+ */
+
+.breakdown-chart {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+/* Header */
+.breakdown-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.breakdown-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.breakdown-period {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Currency Breakdown */
+.currency-breakdown {
+  margin-bottom: var(--space-xl);
+}
+
+.breakdown-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-lg);
+}
+
+.breakdown-total {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.breakdown-currency {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Category List */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.category-name {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.category-amount {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.category-bar-container {
+  position: relative;
+  height: 8px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+}
+
+.category-bar {
+  height: 100%;
+  border-radius: var(--border-radius-xl);
+  transition: width var(--transition-base);
+}
+
+.category-percentage {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* Donut Chart */
+.donut-chart {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-xl) 0;
+}
+
+.donut-chart svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Upsell Banner */
+.upsell-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.upsell-text {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+/* Actions */
+.breakdown-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.breakdown-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .breakdown-total {
+    font-size: var(--font-size-2xl);
+  }
+
+  .category-header {
+    flex-wrap: wrap;
+  }
+
+  .donut-chart svg {
+    width: 160px;
+    height: 160px;
+  }
+
+  .upsell-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 375px) {
+  .breakdown-chart {
+    padding: var(--space-md);
+  }
+
+  .breakdown-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .breakdown-total {
+    font-size: var(--font-size-xl);
+  }
+
+  .category-name,
+  .category-amount {
+    font-size: var(--font-size-sm);
+  }
+}

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moneko Widgets Test Harness</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f3f4f6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .widget-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .widget-selector button {
+      padding: 10px 20px;
+      border: 2px solid #e5e7eb;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .widget-selector button.active {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+    .theme-toggle {
+      margin-bottom: 15px;
+    }
+    .props-editor {
+      margin-top: 15px;
+    }
+    .props-editor textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .props-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .props-actions button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .props-actions button:hover {
+      background: #2563eb;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+    }
+    .log {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #374151;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .log-timestamp {
+      color: #9ca3af;
+      margin-right: 8px;
+    }
+    .log-tool {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Moneko Widgets Test Harness</h1>
+
+    <div class="controls">
+      <div class="widget-selector">
+        <button class="active" data-widget="budget-status">Budget Status Card</button>
+        <button data-widget="category-breakdown">Category Breakdown</button>
+        <button data-widget="expense-table">Expense Table</button>
+      </div>
+
+      <div class="theme-toggle">
+        <label>
+          <input type="checkbox" id="darkMode"> Dark Mode
+        </label>
+      </div>
+
+      <div class="props-editor">
+        <label><strong>Widget Props (JSON):</strong></label>
+        <textarea id="propsInput"></textarea>
+        <div class="props-actions">
+          <button id="applyProps">Apply Props</button>
+          <button id="loadSample">Load Sample Data</button>
+        </div>
+      </div>
+    </div>
+
+    <iframe id="widgetFrame" src=""></iframe>
+
+    <div class="log">
+      <strong>Tool Call Log:</strong>
+      <div id="logContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // Sample data for each widget
+    const SAMPLE_DATA = {
+      'budget-status': {
+        date: '2025-10-30',
+        currency: 'EUR',
+        dailyBudgetMajor: 30,
+        spentToDateMajor: 18.50,
+        remainingTodayMajor: 11.50,
+        projectedMonthRemainingMajor: 120,
+        daysInMonth: 31,
+        dayApplied: 15,
+        risk: { projectedNegative: false },
+        guestInfo: { isGuest: true, canClaim: true }
+      },
+      'category-breakdown': {
+        timeWindow: {
+          startDate: '2025-10-01',
+          endDate: '2025-10-30'
+        },
+        breakdown: [{
+          currency: 'EUR',
+          totalAmountMajor: 742.13,
+          totals: [
+            { category: 'Restaurants', amountMajor: 250.50, share: 0.337 },
+            { category: 'Groceries', amountMajor: 180.00, share: 0.243 },
+            { category: 'Transport', amountMajor: 150.30, share: 0.202 },
+            { category: 'Entertainment', amountMajor: 100.00, share: 0.135 },
+            { category: 'Other', amountMajor: 61.33, share: 0.083 }
+          ]
+        }]
+      },
+      'expense-table': {
+        rows: [
+          {
+            id: '1',
+            date: '2025-10-29',
+            description: 'Ramen dinner',
+            category: 'Restaurants',
+            amountMajor: 12.50,
+            currency: 'EUR'
+          },
+          {
+            id: '2',
+            date: '2025-10-28',
+            description: 'Subway ticket',
+            category: 'Transport',
+            amountMajor: 2.40,
+            currency: 'EUR'
+          },
+          {
+            id: '3',
+            date: '2025-10-27',
+            description: 'Coffee',
+            category: 'Restaurants',
+            amountMajor: 3.80,
+            currency: 'EUR'
+          }
+        ],
+        window: {
+          startDate: '2025-10-01',
+          endDate: '2025-10-30',
+          currency: 'EUR'
+        }
+      }
+    };
+
+    let currentWidget = 'budget-status';
+    let logEntries = [];
+
+    function log(tool, args, result) {
+      const timestamp = new Date().toLocaleTimeString();
+      logEntries.push({ timestamp, tool, args, result });
+      updateLog();
+    }
+
+    function updateLog() {
+      const container = document.getElementById('logContainer');
+      container.innerHTML = logEntries.slice(-10).map(entry => `
+        <div class="log-entry">
+          <span class="log-timestamp">${entry.timestamp}</span>
+          <span class="log-tool">${entry.tool}</span>
+          <div style="margin-left: 80px; color: #d1d5db;">
+            Args: ${JSON.stringify(entry.args)}
+          </div>
+        </div>
+      `).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function loadWidget(widget) {
+      currentWidget = widget;
+      const iframe = document.getElementById('widgetFrame');
+      iframe.src = `http://localhost:4445/${widget}.html`;
+
+      // Update active button
+      document.querySelectorAll('.widget-selector button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.widget === widget);
+      });
+
+      // Load sample props
+      loadSampleData();
+    }
+
+    function loadSampleData() {
+      const textarea = document.getElementById('propsInput');
+      textarea.value = JSON.stringify(SAMPLE_DATA[currentWidget], null, 2);
+    }
+
+    function applyProps() {
+      const textarea = document.getElementById('propsInput');
+      try {
+        const props = JSON.parse(textarea.value);
+        const iframe = document.getElementById('widgetFrame');
+
+        // Send props to iframe
+        iframe.contentWindow.postMessage({
+          type: 'openai:set_globals',
+          globals: {
+            toolOutput: props,
+            theme: document.getElementById('darkMode').checked ? 'dark' : 'light'
+          }
+        }, '*');
+      } catch (err) {
+        alert('Invalid JSON: ' + err.message);
+      }
+    }
+
+    // Mock OpenAI bridge
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'tool_call') {
+        const { tool, args } = event.data;
+        log(tool, args, 'Mocked response');
+
+        // Mock responses
+        const iframe = document.getElementById('widgetFrame');
+        let response = { result: JSON.stringify({ ok: true }) };
+
+        if (tool === 'moneko.set_budget') {
+          response.result = JSON.stringify({
+            structuredContent: {
+              component: 'BudgetStatusCard',
+              props: {
+                ...SAMPLE_DATA['budget-status'],
+                dailyBudgetMajor: args.amount
+              }
+            }
+          });
+        }
+
+        iframe.contentWindow.postMessage({
+          type: 'tool_response',
+          id: event.data.id,
+          response
+        }, '*');
+      }
+    });
+
+    // Initialize
+    document.querySelectorAll('.widget-selector button').forEach(btn => {
+      btn.addEventListener('click', () => loadWidget(btn.dataset.widget));
+    });
+
+    document.getElementById('applyProps').addEventListener('click', applyProps);
+    document.getElementById('loadSample').addEventListener('click', loadSampleData);
+
+    document.getElementById('darkMode').addEventListener('change', (e) => {
+      const iframe = document.getElementById('widgetFrame');
+      iframe.contentWindow.postMessage({
+        type: 'openai:set_globals',
+        globals: {
+          theme: e.target.checked ? 'dark' : 'light'
+        }
+      }, '*');
+    });
+
+    loadWidget('budget-status');
+  </script>
+</body>
+</html>

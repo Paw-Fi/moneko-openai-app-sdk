@@ -1,0 +1,197 @@
+/**
+ * BudgetStatusCard Styles
+ */
+
+.budget-card {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+/* Risk Banner */
+.risk-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  background-color: rgba(251, 191, 36, 0.1);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--border-radius-md);
+}
+
+.risk-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.risk-icon {
+  flex-shrink: 0;
+  color: var(--color-warning);
+}
+
+/* Budget Summary */
+.budget-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-lg);
+  align-items: center;
+  margin-bottom: var(--space-xl);
+}
+
+.budget-main {
+  min-width: 0;
+}
+
+.budget-remaining {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+  word-wrap: break-word;
+}
+
+.budget-planned {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+/* Progress Ring */
+.budget-progress {
+  flex-shrink: 0;
+}
+
+.progress-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-ring svg {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  stroke: currentColor;
+  opacity: 0.1;
+}
+
+.progress-ring-fill {
+  stroke: var(--color-success);
+  transition: stroke-dasharray var(--transition-base);
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.progress-percent {
+  display: block;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.progress-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Budget Details */
+.budget-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.detail-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.detail-value {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: right;
+}
+
+/* Budget Actions */
+.budget-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.budget-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .budget-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-progress {
+    justify-self: center;
+  }
+
+  .budget-remaining {
+    font-size: var(--font-size-2xl);
+  }
+
+  .progress-ring {
+    width: 100px;
+    height: 100px;
+  }
+
+  .progress-ring svg {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 375px) {
+  .budget-card {
+    padding: var(--space-md);
+  }
+
+  .budget-remaining {
+    font-size: var(--font-size-xl);
+  }
+
+  .risk-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .budget-actions .btn {
+    font-size: var(--font-size-sm);
+  }
+}
