@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Plugin, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fg from "fast-glob";
 import path from "node:path";
@@ -197,7 +197,7 @@ if (!window.__vite_plugin_react_preamble_installed__) {
 
 const inputs = buildInputs();
 
-export default defineConfig(() => ({
+export default defineConfig((): UserConfig => ({
   plugins: [react(), multiEntryDevEndpoints({ entries: inputs })],
   cacheDir: "node_modules/.vite-moneko",
   server: {
@@ -208,10 +208,10 @@ export default defineConfig(() => ({
   esbuild: {
     jsx: "automatic",
     jsxImportSource: "react",
-    target: "es2022",
-  },
+    target: "es2023",
+  } as const,
   build: {
-    target: "es2022",
+    target: "es2023",
     sourcemap: true,
     minify: "esbuild",
     outDir: "dist",

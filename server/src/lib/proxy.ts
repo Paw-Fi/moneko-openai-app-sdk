@@ -2,15 +2,22 @@ import { request } from 'undici';
 import { normalizeError } from './errors.js';
 import { logger } from './logger.js';
 
-const base = process.env.EDGE_BASE_URL!;
-const apiKey = process.env.EDGE_API_KEY!;
+/**
+ * Get environment variables (lazily evaluated to allow dotenv to load first)
+ */
+function getEnvVars() {
+  const base = process.env.EDGE_BASE_URL;
+  const apiKey = process.env.EDGE_API_KEY;
 
-if (!base) {
-  throw new Error('EDGE_BASE_URL environment variable is required');
-}
+  if (!base) {
+    throw new Error('EDGE_BASE_URL environment variable is required');
+  }
 
-if (!apiKey) {
-  throw new Error('EDGE_API_KEY environment variable is required');
+  if (!apiKey) {
+    throw new Error('EDGE_API_KEY environment variable is required');
+  }
+
+  return { base, apiKey };
 }
 
 /**
@@ -39,6 +46,8 @@ export async function proxy(
   incoming: Record<string, string | undefined>,
   acceptJson = true
 ): Promise<any> {
+  const { base, apiKey } = getEnvVars();
+
   const headers: Record<string, string> = {
     'content-type': 'application/json',
     'apikey': apiKey,

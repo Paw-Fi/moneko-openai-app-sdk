@@ -1,0 +1,35 @@
+{
+  "name": "@moneko-openai-app-sdk/root",
+  "version": "0.1.0",
+  "description": "Moneko OpenAI App SDK - Complete MCP integration for ChatGPT",
+  "private": true,
+  "scripts": {
+    "build": "pnpm --filter server build && pnpm --filter web build",
+    "dev:server": "pnpm --filter server dev",
+    "dev:web": "pnpm --filter web dev",
+    "start": "pnpm --filter server start",
+    "deploy": "./deploy.sh server/.env",
+    "deploy:prod": "./deploy.sh prod.env",
+    "deploy:staging": "./deploy.sh staging.env",
+    "test": "pnpm --filter server test",
+    "install:all": "pnpm install && pnpm --filter server install && pnpm --filter web install",
+    "clean": "rm -rf server/dist web/dist node_modules server/node_modules web/node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "keywords": [
+    "openai",
+    "mcp",
+    "chatgpt",
+    "budgeting",
+    "expenses",
+    "supabase"
+  ],
+  "author": "Moneko",
+  "license": "MIT"
+}

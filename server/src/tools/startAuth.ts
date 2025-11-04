@@ -6,6 +6,7 @@ import { logger } from '../lib/logger.js';
 /**
  * Register the moneko.start_auth tool
  * Returns a claim link for guest-to-account conversion
+ * NOTE: OAuth authentication is handled automatically via securitySchemes on protected tools
  */
 export function registerStartAuth(server: Server) {
   server.setRequestHandler(
@@ -15,7 +16,7 @@ export function registerStartAuth(server: Server) {
 
       logger.info({ args }, 'Calling moneko.start_auth');
 
-      // Call backend to generate claim link
+      // Call backend to generate claim link for guest account conversion
       const payload = await proxy('/start-auth', args, request.meta?.headers ?? {}, true);
 
       const href = payload?.href || payload?.url || payload?.claimLink;

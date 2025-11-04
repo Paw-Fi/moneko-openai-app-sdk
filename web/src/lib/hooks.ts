@@ -57,7 +57,7 @@ export function useOpenAiGlobal<K extends keyof OpenAiGlobals>(
  * @param defaultState - Default props to use if toolOutput is not available
  * @returns Widget props
  */
-export function useWidgetProps<T extends Record<string, unknown>>(
+export function useWidgetProps<T extends object>(
   defaultState?: T | (() => T)
 ): T | null {
   const props = useOpenAiGlobal("toolOutput") as T | null;

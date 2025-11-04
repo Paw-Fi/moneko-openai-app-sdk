@@ -56,12 +56,12 @@ function readWidgetHtml(componentName: string, webDir: string): string {
  * Register all widget resources and return their URIs
  */
 export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris } {
-  // Find the web/public directory
+  // Find the web/dist directory (contains built HTML with inlined JS/CSS)
   // Server is at moneko-openai-app-sdk/server
   // Web is at moneko-openai-app-sdk/web
   const serverRoot = path.resolve(__dirname, '..', '..');
   const projectRoot = path.resolve(serverRoot, '..');
-  const webDir = path.join(projectRoot, 'web', 'public');
+  const webDir = path.join(projectRoot, 'web', 'dist');
 
   if (!fs.existsSync(webDir)) {
     throw new Error(

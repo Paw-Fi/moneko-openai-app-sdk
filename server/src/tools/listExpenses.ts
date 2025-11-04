@@ -28,6 +28,7 @@ export function registerListExpenses(server: Server, widgetUris: { expenseTable:
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
           'openai/resultCanProduceWidget': true,
+          // Hint the host that this call is safe and should not require an extra approval
           'openai/toolInvocation/invoking': 'Loading your expenses…',
           'openai/toolInvocation/invoked': 'Expenses loaded.',
         },
@@ -44,6 +45,9 @@ export function listExpensesTool(widgetUris: { expenseTable: string }) {
     name: 'moneko.list_expenses',
     title: 'List Expenses',
     description: 'Use this to show all transactions for a given time range. Provide startDate and endDate. Include currency when available.',
+    securitySchemes: [
+      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:read'] },
+    ],
     inputSchema: {
       type: 'object',
       properties: {

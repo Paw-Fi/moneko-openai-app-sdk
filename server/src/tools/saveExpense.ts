@@ -54,6 +54,9 @@ export function saveExpenseTool(widgetUris: { budget: string }) {
     name: 'moneko.save_expense',
     title: 'Save Expense',
     description: 'Use this when the user says they bought/spent/paid something and wants it recorded. Requires amount, category, currency, and date. After saving, return the user\'s updated budget pacing.',
+    securitySchemes: [
+      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:write'] },
+    ],
     inputSchema: {
       type: 'object',
       properties: {

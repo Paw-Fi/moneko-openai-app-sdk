@@ -59,12 +59,21 @@ function buildWidget(widget: Widget): void {
   }
   const jsContent = fs.readFileSync(jsPath, "utf-8");
 
-  // Read CSS bundle
+  // Read CSS bundle - try widget-specific CSS first, then shared CSS
+  let cssContent = "";
   const cssPath = path.join(DIST_DIR, widget.cssFile);
-  if (!fs.existsSync(cssPath)) {
-    throw new Error(`CSS file not found: ${cssPath}`);
+  if (fs.existsSync(cssPath)) {
+    cssContent = fs.readFileSync(cssPath, "utf-8");
+  } else {
+    // Look for any CSS file in dist (Vite may bundle all CSS together)
+    const cssFiles = fs.readdirSync(DIST_DIR).filter(f => f.endsWith('.css'));
+    if (cssFiles.length > 0) {
+      console.log(`  Using shared CSS file: ${cssFiles[0]}`);
+      cssContent = fs.readFileSync(path.join(DIST_DIR, cssFiles[0]), "utf-8");
+    } else {
+      console.warn(`  Warning: No CSS file found, continuing without styles`);
+    }
   }
-  const cssContent = fs.readFileSync(cssPath, "utf-8");
 
   // Read HTML template
   if (!fs.existsSync(widget.htmlTemplate)) {
