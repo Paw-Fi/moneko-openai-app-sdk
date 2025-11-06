@@ -60,9 +60,6 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
     name: 'moneko.update_expense',
     title: 'Update Expense',
     description: 'Use this when the user wants to edit a specific previously listed expense.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:write'] },
-    ],
     inputSchema: {
       type: 'object',
       properties: {

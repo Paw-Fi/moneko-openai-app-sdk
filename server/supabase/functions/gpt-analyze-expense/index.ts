@@ -8,7 +8,7 @@ interface RequestBody {
   currency?: string;
 }
 
-interface ExpenseItem { amount: number; category: string; currency: string; date: string; description?: string }
+interface ExpenseItem { type: 'expense' | 'income'; amount: number; category: string; currency: string; date: string; description?: string }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -41,19 +41,21 @@ Deno.serve(async (req: Request) => {
 
   if (body.text) {
     const text = body.text.trim();
-    // Heuristic: extract first number as amount, infer category keywords
+    // Heuristic: extract first number as amount, infer type + category keywords
     const amountMatch = text.match(/([0-9]+(?:\.[0-9]{1,2})?)/);
     const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
     const lower = text.toLowerCase();
-    const category = lower.includes("uber") || lower.includes("taxi") || lower.includes("train") ? "transport"
+    const isIncome = /\b(earn|earned|income|salary|refund|refunded|got paid|received|receive|deposit|credit|allowance|bonus|reimbursement|transfer in|incoming)\b/.test(lower);
+    const category = isIncome ? (lower.includes('salary') ? 'salary' : lower.includes('refund') ? 'refund' : lower.includes('bonus') ? 'bonus' : 'income')
+      : lower.includes("uber") || lower.includes("taxi") || lower.includes("train") ? "transport"
       : lower.includes("ramen") || lower.includes("coffee") || lower.includes("restaurant") || lower.includes("dinner") ? "food"
       : lower.includes("grocery") || lower.includes("supermarket") ? "groceries"
       : lower.includes("netflix") || lower.includes("movie") || lower.includes("cinema") ? "entertainment" : "other";
-    if (amount > 0) items.push({ amount, category, currency: callerCurrency!, date: callerDate, description: text });
+    if (amount > 0) items.push({ type: isIncome ? 'income' : 'expense', amount, category, currency: callerCurrency!, date: callerDate, description: text });
   } else if (body.image) {
     // Minimal validation only; actual OCR/LLM can be added later.
     if (!body.image.contentType || !body.image.contentType.startsWith('image/')) return errorResponse('Invalid image content type', 400);
-    items.push({ amount: 0, category: 'other', currency: callerCurrency!, date: callerDate, description: 'Receipt image' });
+    items.push({ type: 'expense', amount: 0, category: 'other', currency: callerCurrency!, date: callerDate, description: 'Receipt image' });
   }
 
   if (items.length === 0) return jsonResponse({ success: false, error: 'Could not extract expense information. Please try a clearer input.' }, 400);

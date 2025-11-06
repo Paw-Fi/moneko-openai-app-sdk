@@ -55,9 +55,6 @@ export function setBudgetTool(widgetUris: { budget: string }) {
     name: 'moneko.set_budget',
     title: 'Set Daily Budget',
     description: 'Use this when the user asks to set or change their daily budget. Requires amount (major units), date, and currency. After setting, show updated pacing.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'budget:write'] },
-    ],
     inputSchema: {
       type: 'object',
       properties: {

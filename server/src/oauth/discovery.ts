@@ -2,7 +2,8 @@
  * OAuth 2.1 Discovery Endpoints
  *
  * Implements RFC 8414 OAuth Authorization Server Metadata and
- * Protected Resource Metadata endpoints.
+ * Protected Resource Metadata endpoints, as well as the
+ * OpenID Provider Configuration (OIDC discovery).
  *
  * These endpoints tell ChatGPT:
  * 1. Where your Supabase authorization server is located
@@ -76,6 +77,46 @@ export function getAuthorizationServerMetadata(): AuthorizationServerMetadata {
 }
 
 /**
+ * Generate OpenID Provider Configuration (OIDC discovery)
+ * Spec: OpenID Connect Discovery 1.0, Section 4
+ */
+export function getOpenIdProviderConfiguration() {
+  const supabaseUrl = getSupabaseUrl();
+  const issuer = `${supabaseUrl}/auth/v1`;
+
+  return {
+    issuer,
+    authorization_endpoint: `${issuer}/authorize`,
+    token_endpoint: `${issuer}/token`,
+    jwks_uri: `${supabaseUrl}/.well-known/jwks.json`,
+    response_types_supported: [
+      'code',
+    ],
+    grant_types_supported: [
+      'authorization_code',
+      'refresh_token',
+    ],
+    subject_types_supported: ['public'],
+    id_token_signing_alg_values_supported: ['RS256'],
+    scopes_supported: [
+      'openid',
+      'profile',
+      'email',
+      'budget:read',
+      'budget:write',
+      'expenses:read',
+      'expenses:write',
+    ],
+    token_endpoint_auth_methods_supported: [
+      'client_secret_basic',
+      'client_secret_post',
+      'none',
+    ],
+    code_challenge_methods_supported: ['S256'],
+  } as const;
+}
+
+/**
  * Generate OAuth Protected Resource Metadata
  * Spec: RFC 8414 Section 3
  */
@@ -114,14 +155,29 @@ export function handleOAuthDiscovery(req: IncomingMessage, res: ServerResponse, 
   try {
     let metadata: AuthorizationServerMetadata | ProtectedResourceMetadata;
 
-    if (pathname === '/.well-known/oauth-authorization-server') {
+    // Support both root-level and path-qualified variants (e.g., /mcp/.well-known/...)
+    const normalized = pathname
+      .replace(/^\/mcp\/(\.well-known\/.*)$/, '/$1')
+      .replace(/^(\.well-known\/.*)$/, '/$1')
+      .replace(/\/+$/, '');
+
+    if (normalized === '/.well-known/oauth-authorization-server' ||
+        normalized === '/.well-known/oauth-authorization-server/mcp') {
       // Authorization Server Metadata (RFC 8414 Section 2)
       metadata = getAuthorizationServerMetadata();
       logger.info('Served OAuth authorization server metadata');
-    } else if (pathname === '/.well-known/oauth-protected-resource') {
+    } else if (normalized === '/.well-known/oauth-protected-resource' ||
+               normalized === '/.well-known/oauth-protected-resource/mcp') {
       // Protected Resource Metadata (RFC 8414 Section 3)
       metadata = getProtectedResourceMetadata();
       logger.info('Served OAuth protected resource metadata');
+    } else if (normalized === '/.well-known/openid-configuration' ||
+               normalized === '/.well-known/openid-configuration/mcp') {
+      // OpenID Provider Configuration (OIDC discovery)
+      const config = getOpenIdProviderConfiguration();
+      res.writeHead(200);
+      res.end(JSON.stringify(config, null, 2));
+      return;
     } else {
       res.writeHead(404);
       res.end(JSON.stringify({ error: 'Not Found' }));

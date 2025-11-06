@@ -60,9 +60,6 @@ export function deleteExpenseTool(widgetUris: { expenseTable: string }) {
     name: 'moneko.delete_expense',
     title: 'Delete Expense',
     description: 'Use this when the user asks to delete a specific previously listed expense.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:write'] },
-    ],
     inputSchema: {
       type: 'object',
       properties: {

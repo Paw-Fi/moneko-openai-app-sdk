@@ -44,9 +44,6 @@ export function expenseSummaryTool(widgetUris: { categoryBreakdown: string }) {
     name: 'moneko.expense_summary',
     title: 'Get Expense Summary',
     description: 'Use this when the user asks where their money went in a given period, e.g. "why am I broke?" or "show October spending". Requires endDate. startDate optional.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:read'] },
-    ],
     inputSchema: {
       type: 'object',
       properties: {

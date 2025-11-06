@@ -46,11 +46,7 @@ export function getBudgetTool(widgetUris: { budget: string }) {
   return {
     name: 'moneko.get_budget',
     title: 'Get Budget Status',
-    description: 'Call this when the user asks how much money they have left today or how they\'re pacing this month. Always include date and currency if known. Requires authentication.',
-    // Advertise OAuth so ChatGPT associates this tool with the Moneko connection
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'budget:read'] },
-    ],
+    description: 'Call this when the user asks how much money they have left today or how they\'re pacing this month. Always include date and currency if known.',
     inputSchema: {
       type: 'object',
       properties: {

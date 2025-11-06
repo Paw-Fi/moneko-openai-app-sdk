@@ -45,9 +45,6 @@ export function listExpensesTool(widgetUris: { expenseTable: string }) {
     name: 'moneko.list_expenses',
     title: 'List Expenses',
     description: 'Use this to show all transactions for a given time range. Provide startDate and endDate. Include currency when available.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'expenses:read'] },
-    ],
     inputSchema: {
       type: 'object',
       properties: {

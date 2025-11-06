@@ -15,6 +15,7 @@ import { registerWidgets, type WidgetMetadata } from './widgets/register.js';
 import { getBudgetTool } from './tools/getBudget.js';
 import { setBudgetTool } from './tools/setBudget.js';
 import { saveExpenseTool } from './tools/saveExpense.js';
+import { saveIncomeTool } from './tools/saveIncome.js';
 import { listExpensesTool } from './tools/listExpenses.js';
 import { expenseSummaryTool } from './tools/expenseSummary.js';
 import { updateExpenseTool } from './tools/updateExpense.js';
@@ -22,55 +23,7 @@ import { deleteExpenseTool } from './tools/deleteExpense.js';
 import { startAuthTool } from './tools/startAuth.js';
 import { startUpgradeTool } from './tools/startUpgrade.js';
 import { logger } from './lib/logger.js';
-import { createSupabaseVerifier, SupabaseTokenVerifier } from './oauth/verifier.js';
-import type { AccessToken } from './oauth/types.js';
-
-/**
- * Tools that require authentication
- *
- * IMPORTANT:
- * - Read-only queries should not require OAuth so that new/guest users
- *   can immediately get value after connecting the app. We rely on
- *   OpenAI conversation headers to create an ephemeral guest profile
- *   in the backend.
- * - Mutating tools remain protected and will require a valid token
- *   when OAuth is configured.
- */
-const PROTECTED_TOOLS = new Set([
-  'moneko.set_budget',
-  'moneko.save_expense',
-  'moneko.update_expense',
-  'moneko.delete_expense',
-]);
-
-/**
- * Authenticate request and extract user identity
- */
-async function authenticateRequest(
-  request: CallToolRequest,
-  tokenVerifier: SupabaseTokenVerifier
-): Promise<AccessToken | null> {
-  const headers = (request as any).meta?.headers ?? {};
-  const authHeader = headers.authorization;
-
-  // Extract Bearer token
-  const token = SupabaseTokenVerifier.extractBearerToken(authHeader);
-
-  if (!token) {
-    logger.warn({ toolName: request.params.name }, 'Missing authentication token');
-    return null;
-  }
-
-  // Verify token
-  const accessToken = await tokenVerifier.verifyToken(token);
-
-  if (!accessToken) {
-    logger.warn({ toolName: request.params.name }, 'Invalid or expired token');
-    return null;
-  }
-
-  return accessToken;
-}
+// OAuth removed for MVP
 
 /**
  * Create and configure the Moneko MCP server
@@ -85,14 +38,7 @@ export function createMonekoServer(): Server {
     throw new Error('Missing required environment variables. Check .env file.');
   }
 
-  // Create OAuth token verifier
-  let tokenVerifier: SupabaseTokenVerifier | null = null;
-  try {
-    tokenVerifier = createSupabaseVerifier();
-    logger.info('OAuth token verifier initialized');
-  } catch (error) {
-    logger.warn({ error }, 'OAuth not configured - running without authentication');
-  }
+  // OAuth removed for MVP
 
   const server = new Server(
     {
@@ -288,6 +234,7 @@ export function createMonekoServer(): Server {
     getBudgetTool(uris),
     setBudgetTool(uris),
     saveExpenseTool(uris),
+    saveIncomeTool(),
     listExpensesTool(uris),
     expenseSummaryTool(uris),
     updateExpenseTool(uris),
@@ -311,29 +258,7 @@ export function createMonekoServer(): Server {
       const args = request.params.arguments ?? {};
       const headers = (request as any).meta?.headers ?? {};
 
-      logger.info({ toolName, args }, 'Tool called');
-
-      // Authenticate protected tools
-      let user: AccessToken | null = null;
-      if (PROTECTED_TOOLS.has(toolName)) {
-        if (!tokenVerifier) {
-          logger.warn('OAuth not configured, allowing unauthenticated access');
-        } else {
-          user = await authenticateRequest(request, tokenVerifier);
-
-          if (!user) {
-            throw new Error(
-              'Authentication required. Please log in with your Moneko account to access your data.'
-            );
-          }
-
-          logger.info({ userId: user.subject, toolName }, 'Authenticated user request');
-
-          // Add user ID to headers for Supabase backend
-          headers['x-user-id'] = user.subject;
-          headers['x-user-email'] = user.subject; // Backend expects email as identifier
-        }
-      }
+      logger.info({ toolName, args }, 'Tool called - no authentication required for MVP');
 
       // Route to appropriate tool handler
       switch (toolName) {
@@ -408,6 +333,18 @@ export function createMonekoServer(): Server {
               'openai/widgetAccessible': true,
               'openai/resultCanProduceWidget': true,
             },
+          };
+        }
+
+        case 'moneko.save_income': {
+          const { SaveIncomeInput } = await import('./schemas.js');
+          const { proxy } = await import('./lib/proxy.js');
+
+          const validArgs = SaveIncomeInput.parse(args);
+          await proxy('/save-income', validArgs, headers, true);
+
+          return {
+            content: [{ type: 'text', text: 'Income saved successfully.' }],
           };
         }
 

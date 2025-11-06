@@ -17,6 +17,24 @@ export const SaveExpenseInput = z.object({
 export type SaveExpenseInput = z.infer<typeof SaveExpenseInput>;
 
 /**
+ * Schema for saving income
+ * Mirrors save-income edge function
+ */
+export const SaveIncomeInput = z.object({
+  amount: z.number().positive(),
+  category: z.string().min(1),
+  currency: z.string().length(3),
+  date: z.string().min(1),           // "YYYY-MM-DD" or ISO datetime
+  description: z.string().optional(),
+  source: z.string().optional(),
+  ownerType: z.enum(['me', 'partner', 'household']).optional(),
+  privacyScope: z.enum(['private', 'balances_only', 'full']).optional(),
+  householdId: z.string().uuid().optional(),
+});
+
+export type SaveIncomeInput = z.infer<typeof SaveIncomeInput>;
+
+/**
  * Schema for listing expenses with optional filters
  */
 export const ListExpensesInput = z.object({
