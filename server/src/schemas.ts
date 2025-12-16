@@ -124,3 +124,161 @@ export type StartAuthInput = z.infer<typeof StartAuthInput>;
 export const StartUpgradeInput = z.object({});
 
 export type StartUpgradeInput = z.infer<typeof StartUpgradeInput>;
+
+/**
+ * MVP Schema: log_expense
+ */
+export const LogExpenseInput = z.object({
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  category: z.string().min(1),
+  merchant: z.string().min(1).optional(),
+  date: z.string().min(1),
+  note: z.string().min(1).optional(),
+});
+
+export type LogExpenseInput = z.infer<typeof LogExpenseInput>;
+
+/**
+ * MVP Schema: list_expenses
+ */
+export const ListExpensesMvpInput = z.object({
+  range: z
+    .object({
+      startDate: z.string().min(1).optional(),
+      endDate: z.string().min(1).optional(),
+    })
+    .optional(),
+  category: z.string().min(1).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+});
+
+export type ListExpensesMvpInput = z.infer<typeof ListExpensesMvpInput>;
+
+/**
+ * MVP Schema: get_summary
+ */
+export const GetSummaryInput = z.object({
+  range: z
+    .object({
+      startDate: z.string().min(1).optional(),
+      endDate: z.string().min(1).optional(),
+    })
+    .optional(),
+});
+
+export type GetSummaryInput = z.infer<typeof GetSummaryInput>;
+
+/**
+ * MVP Schema: create_category
+ */
+export const CreateCategoryInput = z.object({
+  name: z.string().min(1).max(40),
+});
+
+export type CreateCategoryInput = z.infer<typeof CreateCategoryInput>;
+
+/**
+ * MVP Schema: list_categories
+ */
+export const ListCategoriesInput = z.object({});
+
+export type ListCategoriesInput = z.infer<typeof ListCategoriesInput>;
+
+/**
+ * Embedded auth: store Supabase access token for this chat
+ */
+export const SetAuthSessionInput = z.object({
+  access_token: z.string().min(1),
+});
+
+export type SetAuthSessionInput = z.infer<typeof SetAuthSessionInput>;
+
+export const ClearAuthSessionInput = z.object({});
+
+export type ClearAuthSessionInput = z.infer<typeof ClearAuthSessionInput>;
+
+export const AuthStatusInput = z.object({});
+
+export type AuthStatusInput = z.infer<typeof AuthStatusInput>;
+
+/**
+ * WhatsApp-bot parity tools (for ChatGPT App MCP)
+ */
+export const AddTransactionInput = z.object({
+  type: z.enum(['expense', 'income']),
+  amount: z.number().positive(),
+  category: z.string().min(1),
+  description: z.string().optional(),
+  date: z.string().optional(),
+  currency: z.string().length(3).optional(),
+  household_id: z.string().optional(),
+  household_name: z.string().optional(),
+  is_recurring: z.boolean().optional(),
+  frequency: z.string().optional(),
+});
+
+export type AddTransactionInput = z.infer<typeof AddTransactionInput>;
+
+export const UpdateTransactionInput = z.object({
+  expense_id: z.string().min(1),
+  amount: z.number().positive().optional(),
+  category: z.string().min(1).optional(),
+  description: z.string().optional(),
+  date: z.string().optional(),
+  currency: z.string().length(3).optional(),
+  household_id: z.string().optional(),
+  household_name: z.string().optional(),
+});
+
+export type UpdateTransactionInput = z.infer<typeof UpdateTransactionInput>;
+
+export const DeleteTransactionInput = z.object({
+  expense_id: z.string().min(1),
+});
+
+export type DeleteTransactionInput = z.infer<typeof DeleteTransactionInput>;
+
+export const ListTransactionsInput = z.object({
+  type: z.enum(['expense', 'income']).optional(),
+  currency: z.string().length(3).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  household_id: z.string().optional(),
+  household_name: z.string().optional(),
+});
+
+export type ListTransactionsInput = z.infer<typeof ListTransactionsInput>;
+
+export const SetCurrencyInput = z.object({
+  currency: z.string().length(3),
+});
+
+export type SetCurrencyInput = z.infer<typeof SetCurrencyInput>;
+
+export const GenerateChartUrlInput = z.object({
+  chart_type: z.enum(['bar', 'pie', 'donut', 'radar']),
+  labels: z.array(z.string().min(1)),
+  data: z.array(z.number()),
+  title: z.string().optional(),
+});
+
+export type GenerateChartUrlInput = z.infer<typeof GenerateChartUrlInput>;
+
+export const FinancialInsightInput = z.object({
+  scope: z.string().optional(),
+});
+
+export type FinancialInsightInput = z.infer<typeof FinancialInsightInput>;
+
+export const ManageRecurringInput = z.object({
+  action: z.enum(['add', 'delete']),
+  expense_id: z.string().optional(),
+  amount: z.number().positive().optional(),
+  category: z.string().min(1).optional(),
+  frequency: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+  type: z.enum(['expense', 'income']).optional(),
+});
+
+export type ManageRecurringInput = z.infer<typeof ManageRecurringInput>;

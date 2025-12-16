@@ -111,6 +111,7 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,

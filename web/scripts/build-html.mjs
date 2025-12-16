@@ -1,15 +1,14 @@
 /**
- * Build HTML files with inlined JavaScript and CSS
+ * Build HTML files with inlined JavaScript and CSS (no TS runtime required).
  *
  * This script generates production-ready HTML files for each widget
  * with all JavaScript and CSS inlined to meet OpenAI Apps SDK requirements.
  *
- * Per Section C.3, each HTML file must:
+ * Per guidelines:
  * - Include CSP meta tag
  * - Inline all scripts and styles
  * - Be self-contained with no external dependencies
  */
-
 import fs from "node:fs";
 import path from "node:path";
 
@@ -17,15 +16,7 @@ const DIST_DIR = path.resolve("dist");
 const PUBLIC_DIR = path.resolve("public");
 const OUTPUT_DIR = DIST_DIR;
 
-interface Widget {
-  name: string;
-  jsFile: string;
-  cssFile: string;
-  htmlTemplate: string;
-  outputHtml: string;
-}
-
-const widgets: Widget[] = [
+const widgets = [
   {
     name: "Budget Status Card",
     jsFile: "budget-status.js",
@@ -49,24 +40,21 @@ const widgets: Widget[] = [
   },
 ];
 
-function buildWidget(widget: Widget): void {
+function buildWidget(widget) {
   console.log(`Building ${widget.name}...`);
 
-  // Read JavaScript bundle
   const jsPath = path.join(DIST_DIR, widget.jsFile);
   if (!fs.existsSync(jsPath)) {
     throw new Error(`JavaScript file not found: ${jsPath}`);
   }
   const jsContent = fs.readFileSync(jsPath, "utf-8");
 
-  // Read CSS bundle - try widget-specific CSS first, then shared CSS
   let cssContent = "";
   const cssPath = path.join(DIST_DIR, widget.cssFile);
   if (fs.existsSync(cssPath)) {
     cssContent = fs.readFileSync(cssPath, "utf-8");
   } else {
-    // Look for any CSS file in dist (Vite may bundle all CSS together)
-    const cssFiles = fs.readdirSync(DIST_DIR).filter(f => f.endsWith('.css'));
+    const cssFiles = fs.readdirSync(DIST_DIR).filter((f) => f.endsWith(".css"));
     if (cssFiles.length > 0) {
       console.log(`  Using shared CSS file: ${cssFiles[0]}`);
       cssContent = fs.readFileSync(path.join(DIST_DIR, cssFiles[0]), "utf-8");
@@ -75,13 +63,11 @@ function buildWidget(widget: Widget): void {
     }
   }
 
-  // Read HTML template
   if (!fs.existsSync(widget.htmlTemplate)) {
     throw new Error(`HTML template not found: ${widget.htmlTemplate}`);
   }
   let html = fs.readFileSync(widget.htmlTemplate, "utf-8");
 
-  // Replace script and link tags with inlined content
   html = html.replace(
     /<script[^>]+src="[^"]+"[^>]*><\/script>/g,
     `<script type="module">${jsContent}</script>`
@@ -91,13 +77,12 @@ function buildWidget(widget: Widget): void {
     `<style>${cssContent}</style>`
   );
 
-  // Write output HTML
   const outputPath = path.join(OUTPUT_DIR, widget.outputHtml);
   fs.writeFileSync(outputPath, html, "utf-8");
   console.log(`✓ Created ${outputPath}`);
 }
 
-function main(): void {
+function main() {
   console.log("Building widget HTML files...\n");
 
   if (!fs.existsSync(DIST_DIR)) {
@@ -105,12 +90,7 @@ function main(): void {
   }
 
   for (const widget of widgets) {
-    try {
-      buildWidget(widget);
-    } catch (err) {
-      console.error(`✗ Failed to build ${widget.name}:`, err);
-      process.exit(1);
-    }
+    buildWidget(widget);
   }
 
   console.log("\n✓ All widgets built successfully!");

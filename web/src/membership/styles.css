@@ -1,0 +1,124 @@
+.membership {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.membership-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.membership-title {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  margin: 0;
+}
+
+.membership-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.membership-message {
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.membership-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xl);
+  padding: var(--space-md);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.membership-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.membership-row:last-child {
+  border-bottom: none;
+}
+
+.membership-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.membership-value {
+  font-weight: 800;
+  font-size: var(--font-size-sm);
+}
+
+.membership-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+@media (min-width: 860px) {
+  .plans {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.plan {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xl);
+  padding: var(--space-md);
+  background: rgba(255, 255, 255, 0.6);
+  position: relative;
+}
+
+.plan-featured {
+  border-color: rgba(59, 130, 246, 0.55);
+}
+
+.plan-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: var(--font-size-xs);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--color-text);
+}
+
+.plan-name {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.plan-price {
+  font-size: var(--font-size-xl);
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.plan-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-height: 40px;
+  margin-bottom: var(--space-sm);
+}

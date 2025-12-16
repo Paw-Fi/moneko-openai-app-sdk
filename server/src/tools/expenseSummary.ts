@@ -43,25 +43,26 @@ export function expenseSummaryTool(widgetUris: { categoryBreakdown: string }) {
   return {
     name: 'moneko.expense_summary',
     title: 'Get Expense Summary',
-    description: 'Use this when the user asks where their money went in a given period, e.g. "why am I broke?" or "show October spending". Requires endDate. startDate optional.',
+    description:
+      'Use this when the user asks for a spending breakdown by category (e.g., “where did my money go this month?”). Do not use for listing individual transactions.',
     inputSchema: {
       type: 'object',
       properties: {
         startDate: {
           type: 'string',
-          description: 'Optional start date (lower bound, YYYY-MM-DD format)',
+          description: 'Optional start date (YYYY-MM-DD), e.g. 2025-12-01.',
         },
         endDate: {
           type: 'string',
-          description: 'End date (upper bound, YYYY-MM-DD format, required)',
+          description: 'End date (YYYY-MM-DD), e.g. 2025-12-31.',
         },
         currency: {
           type: 'string',
-          description: 'Optional currency filter (3 letters)',
+          description: 'Optional currency filter (3 letters), e.g. USD.',
         },
         maxRows: {
           type: 'number',
-          description: 'Optional maximum number of rows to return',
+          description: 'Optional maximum number of categories to return.',
         },
       },
       required: ['endDate'],
@@ -70,6 +71,7 @@ export function expenseSummaryTool(widgetUris: { categoryBreakdown: string }) {
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.categoryBreakdown,

@@ -32,6 +32,7 @@ export function BudgetStatusCard() {
   const [isClaimLoading, setIsClaimLoading] = useState(false);
   const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
   const [localProps, setLocalProps] = useState(props);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Use local props if available (after modal update), otherwise use props from toolOutput
   const displayProps = localProps ?? props;
@@ -81,6 +82,7 @@ export function BudgetStatusCard() {
 
   const handleSaveInMoneko = async () => {
     setIsClaimLoading(true);
+    setErrorMessage(null);
     try {
       const response = await callTool("moneko.start_auth", {});
       const result = JSON.parse(response.result);
@@ -90,7 +92,7 @@ export function BudgetStatusCard() {
       }
     } catch (err) {
       console.error("Failed to start auth:", err);
-      alert("Failed to start account claim. Please try again.");
+      setErrorMessage("Failed to start account claim. Please try again.");
     } finally {
       setIsClaimLoading(false);
     }
@@ -98,6 +100,7 @@ export function BudgetStatusCard() {
 
   const handleEnableAlerts = async () => {
     setIsUpgradeLoading(true);
+    setErrorMessage(null);
     try {
       const response = await callTool("moneko.start_upgrade", {});
       const result = JSON.parse(response.result);
@@ -107,7 +110,7 @@ export function BudgetStatusCard() {
       }
     } catch (err) {
       console.error("Failed to start upgrade:", err);
-      alert("Failed to start upgrade. Please try again.");
+      setErrorMessage("Failed to start upgrade. Please try again.");
     } finally {
       setIsUpgradeLoading(false);
     }
@@ -115,6 +118,11 @@ export function BudgetStatusCard() {
 
   return (
     <div className="budget-card" role="article" aria-label="Budget status summary">
+      {errorMessage && (
+        <div className="form-error" role="alert" aria-live="polite">
+          {errorMessage}
+        </div>
+      )}
       {/* Risk Warning - Conditional secondary action when overspending */}
       {risk.projectedNegative && (
         <div className="risk-banner" role="alert" aria-live="polite">

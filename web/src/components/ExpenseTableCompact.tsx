@@ -29,6 +29,8 @@ export function ExpenseTableCompact() {
   const props = useWidgetProps<ExpenseTableCompactProps>();
   const [editingExpense, setEditingExpense] = useState<ExpenseRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!props || !props.rows) {
     return (
@@ -65,27 +67,29 @@ export function ExpenseTableCompact() {
     setEditingExpense(expense);
   };
 
-  const handleDelete = async (expense: ExpenseRow) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete this expense?\n\n${expense.description} - ${formatAmount(expense.amountMajor, expense.currency)}`
-      )
-    ) {
-      return;
-    }
+  const requestDelete = (expense: ExpenseRow) => {
+    setErrorMessage(null);
+    setConfirmDeleteId(expense.id);
+  };
 
+  const cancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
+
+  const confirmDelete = async (expense: ExpenseRow) => {
     setDeletingId(expense.id);
+    setErrorMessage(null);
 
     try {
       await callTool("moneko.delete_expense", {
         expenseId: expense.id,
       });
 
-      // Refresh the list after deletion
+      setConfirmDeleteId(null);
       await refreshList();
     } catch (err) {
       console.error("Failed to delete expense:", err);
-      alert("Failed to delete expense. Please try again.");
+      setErrorMessage("Failed to delete expense. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -160,6 +164,11 @@ export function ExpenseTableCompact() {
             {formatDate(timeWindow.startDate)} to {formatDate(timeWindow.endDate)}
           </p>
         )}
+        {errorMessage && (
+          <div className="form-error" role="alert" aria-live="polite">
+            {errorMessage}
+          </div>
+        )}
       </header>
 
       <div className="table-container">
@@ -191,7 +200,7 @@ export function ExpenseTableCompact() {
                       className="btn-icon btn-edit"
                       onClick={() => handleEdit(expense)}
                       aria-label={`Edit ${expense.description || "expense"}, ${formatAmount(expense.amountMajor, expense.currency)}`}
-                      disabled={deletingId === expense.id}
+                      disabled={deletingId === expense.id || confirmDeleteId === expense.id}
                       title="Edit expense"
                     >
                       <svg
@@ -210,17 +219,42 @@ export function ExpenseTableCompact() {
                         />
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      className="btn-icon btn-delete"
-                      onClick={() => handleDelete(expense)}
-                      aria-label={`Delete ${expense.description || "expense"}, ${formatAmount(expense.amountMajor, expense.currency)}`}
-                      disabled={deletingId === expense.id}
-                      title="Delete expense"
-                    >
-                      {deletingId === expense.id ? (
-                        <span className="spinner" aria-label="Deleting..." role="status">⋯</span>
-                      ) : (
+                    {confirmDeleteId === expense.id ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-icon btn-delete"
+                          onClick={() => confirmDelete(expense)}
+                          aria-label={`Confirm delete ${expense.description || "expense"}`}
+                          disabled={deletingId === expense.id}
+                          title="Confirm delete"
+                        >
+                          {deletingId === expense.id ? (
+                            <span className="spinner" aria-label="Deleting..." role="status">⋯</span>
+                          ) : (
+                            <span aria-hidden="true">✓</span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon btn-secondary"
+                          onClick={cancelDelete}
+                          aria-label="Cancel delete"
+                          disabled={deletingId === expense.id}
+                          title="Cancel"
+                        >
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-icon btn-delete"
+                        onClick={() => requestDelete(expense)}
+                        aria-label={`Delete ${expense.description || "expense"}, ${formatAmount(expense.amountMajor, expense.currency)}`}
+                        disabled={deletingId === expense.id}
+                        title="Delete expense"
+                      >
                         <svg
                           width="20"
                           height="20"
@@ -236,8 +270,8 @@ export function ExpenseTableCompact() {
                             strokeLinejoin="round"
                           />
                         </svg>
-                      )}
-                    </button>
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

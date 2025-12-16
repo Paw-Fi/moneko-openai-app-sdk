@@ -29,22 +29,20 @@ export function saveIncomeTool() {
   return {
     name: 'moneko.save_income',
     title: 'Save Income',
-    description: 'Record an income transaction (e.g., salary, refund, gift). Requires amount, category, currency, and date.',
-    securitySchemes: [
-      { type: 'oauth2', scopes: ['openid', 'profile', 'income:write'] },
-    ],
+    description:
+      'Use this when the user wants to record income (e.g., salary, refund, gift). Do not use for expenses or summaries.',
     inputSchema: {
       type: 'object',
       properties: {
-        amount: { type: 'number', description: 'Income amount (positive number)' },
-        category: { type: 'string', description: 'Income category (e.g., income, salary, refund)' },
-        currency: { type: 'string', description: 'Currency code (e.g., USD, EUR)' },
-        date: { type: 'string', description: 'Date (YYYY-MM-DD or ISO datetime)' },
-        description: { type: 'string', description: 'Optional description' },
-        source: { type: 'string', description: 'Optional income source' },
-        ownerType: { type: 'string', enum: ['me', 'partner', 'household'], description: 'Owner attribution' },
-        privacyScope: { type: 'string', enum: ['private', 'balances_only', 'full'], description: 'Visibility scope' },
-        householdId: { type: 'string', description: 'Optional household to share with' },
+        amount: { type: 'number', description: 'Income amount in major units (e.g., 2500.00).' },
+        category: { type: 'string', description: 'Income category (e.g., Salary, Refund).' },
+        currency: { type: 'string', description: 'ISO currency code (e.g., USD, EUR).' },
+        date: { type: 'string', description: 'Date (YYYY-MM-DD or ISO datetime).' },
+        description: { type: 'string', description: 'Optional note/description.' },
+        source: { type: 'string', description: 'Optional income source.' },
+        ownerType: { type: 'string', enum: ['me', 'partner', 'household'], description: 'Owner attribution (optional).' },
+        privacyScope: { type: 'string', enum: ['private', 'balances_only', 'full'], description: 'Visibility scope (optional).' },
+        householdId: { type: 'string', description: 'Optional household to share with.' },
       },
       required: ['amount', 'category', 'currency', 'date'],
       additionalProperties: false,
@@ -52,7 +50,7 @@ export function saveIncomeTool() {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
+      openWorldHint: false,
     },
   };
 }
-

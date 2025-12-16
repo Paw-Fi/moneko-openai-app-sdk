@@ -53,15 +53,25 @@ export async function proxy(
     'apikey': apiKey,
   };
 
-  // Forward OpenAI identity headers so Supabase can resolve/create guest user
-  const conv = incoming['openai-conversation-id'] ?? incoming['OpenAI-Conversation-Id'];
-  const eph = incoming['openai-ephemeral-user-id'] ?? incoming['OpenAI-Ephemeral-User-Id'];
-
-  if (conv) {
-    headers['OpenAI-Conversation-Id'] = String(conv);
+  // Forward OAuth bearer token so Edge functions can authorize as the logged-in user.
+  const authorization = incoming['authorization'] ?? incoming['Authorization'];
+  if (authorization) {
+    headers['Authorization'] = String(authorization);
   }
-  if (eph) {
-    headers['OpenAI-Ephemeral-User-Id'] = String(eph);
+
+  // Forward OpenAI identity headers only when we are not acting as a logged-in user.
+  // Many Edge functions treat these headers as "GPT guest mode" and may return different shapes (e.g., Markdown),
+  // so avoid sending them when an Authorization token is present.
+  if (!authorization) {
+    const conv = incoming['openai-conversation-id'] ?? incoming['OpenAI-Conversation-Id'];
+    const eph = incoming['openai-ephemeral-user-id'] ?? incoming['OpenAI-Ephemeral-User-Id'];
+
+    if (conv) {
+      headers['OpenAI-Conversation-Id'] = String(conv);
+    }
+    if (eph) {
+      headers['OpenAI-Ephemeral-User-Id'] = String(eph);
+    }
   }
 
   // Request structured JSON response
@@ -71,7 +81,10 @@ export async function proxy(
 
   const url = `${base}${path}`;
 
-  logger.debug({ url, path, headers: { ...headers, apikey: '[REDACTED]' } }, 'Proxying request to Edge function');
+  const headersForLog: Record<string, string> = { ...headers, apikey: '[REDACTED]' };
+  if ('Authorization' in headersForLog) headersForLog.Authorization = '[REDACTED]';
+
+  logger.debug({ url, path, headers: headersForLog }, 'Proxying request to Edge function');
 
   try {
     const res = await request(url, {
@@ -99,6 +112,80 @@ export async function proxy(
 
     // Network or other unexpected errors
     logger.error({ error, url }, 'Proxy request failed');
+    throw new Error('Failed to connect to backend service. Please try again.');
+  }
+}
+
+function toQueryString(query: Record<string, string | number | boolean | null | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    params.set(key, String(value));
+  }
+  const s = params.toString();
+  return s ? `?${s}` : '';
+}
+
+/**
+ * Proxy GET requests to Supabase Edge functions (for endpoints like /get-subscription).
+ *
+ * @param path - Edge function path (e.g., '/get-subscription')
+ * @param query - Query parameters appended to the URL
+ * @param incoming - Headers from incoming MCP request
+ * @param acceptJson - Whether to request JSON response (default: true)
+ * @returns Parsed response payload
+ */
+export async function proxyGet(
+  path: string,
+  query: Record<string, string | number | boolean | null | undefined>,
+  incoming: Record<string, string | undefined>,
+  acceptJson = true
+): Promise<any> {
+  const { base, apiKey } = getEnvVars();
+
+  const headers: Record<string, string> = {
+    'apikey': apiKey,
+  };
+
+  const authorization = incoming['authorization'] ?? incoming['Authorization'];
+  if (authorization) {
+    headers['Authorization'] = String(authorization);
+  }
+
+  if (acceptJson) {
+    headers['Accept'] = 'application/json';
+  }
+
+  const url = `${base}${path}${toQueryString(query)}`;
+
+  const headersForLog: Record<string, string> = { ...headers, apikey: '[REDACTED]' };
+  if ('Authorization' in headersForLog) headersForLog.Authorization = '[REDACTED]';
+
+  logger.debug({ url, path, headers: headersForLog }, 'Proxying GET request to Edge function');
+
+  try {
+    const res = await request(url, {
+      method: 'GET',
+      headers,
+    });
+
+    const text = await res.body.text();
+    const ctype = res.headers['content-type'] || '';
+    const payload = ctype.includes('application/json') ? safeParse(text) : text;
+
+    logger.debug({ status: res.statusCode, payload }, 'Received response from Edge function (GET)');
+
+    if (res.statusCode >= 400) {
+      throw normalizeError(res.statusCode, payload);
+    }
+
+    return payload;
+  } catch (error) {
+    if ((error as any).status) {
+      throw error;
+    }
+
+    logger.error({ error, url }, 'Proxy GET request failed');
     throw new Error('Failed to connect to backend service. Please try again.');
   }
 }

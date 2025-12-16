@@ -46,21 +46,22 @@ export function getBudgetTool(widgetUris: { budget: string }) {
   return {
     name: 'moneko.get_budget',
     title: 'Get Budget Status',
-    description: 'Call this when the user asks how much money they have left today or how they\'re pacing this month. Always include date and currency if known.',
+    description:
+      'Use this when the user asks how much budget they have left today or how they are pacing this month. Do not use for listing transactions.',
     inputSchema: {
       type: 'object',
       properties: {
         date: {
           type: 'string',
-          description: 'The date for budget check (YYYY-MM-DD format)',
+          description: 'Date for budget check (YYYY-MM-DD), e.g. 2025-12-16.',
         },
         currency: {
           type: 'string',
-          description: 'Currency code (3 letters, e.g., EUR, USD)',
+          description: 'Optional ISO currency code (3 letters), e.g., EUR, USD.',
         },
         day: {
           type: 'number',
-          description: 'Optional day override for projections',
+          description: 'Optional day override for projections (1-31).',
         },
       },
       required: ['date'],
@@ -69,6 +70,7 @@ export function getBudgetTool(widgetUris: { budget: string }) {
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.budget,

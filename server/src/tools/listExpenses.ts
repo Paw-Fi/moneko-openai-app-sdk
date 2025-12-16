@@ -44,25 +44,26 @@ export function listExpensesTool(widgetUris: { expenseTable: string }) {
   return {
     name: 'moneko.list_expenses',
     title: 'List Expenses',
-    description: 'Use this to show all transactions for a given time range. Provide startDate and endDate. Include currency when available.',
+    description:
+      'Use this when the user explicitly asks for a transaction list/ledger/recent transactions. Do not use for spending breakdowns (use moneko.expense_summary or get_summary).',
     inputSchema: {
       type: 'object',
       properties: {
         startDate: {
           type: 'string',
-          description: 'Start date for filtering (YYYY-MM-DD format)',
+          description: 'Start date (YYYY-MM-DD), e.g. 2025-12-01.',
         },
         endDate: {
           type: 'string',
-          description: 'End date for filtering (YYYY-MM-DD format)',
+          description: 'End date (YYYY-MM-DD), e.g. 2025-12-31.',
         },
         currency: {
           type: 'string',
-          description: 'Currency code to filter by (3 letters)',
+          description: 'Optional ISO currency code (3 letters), e.g. USD.',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of expenses to return (1-200)',
+          description: 'Optional max rows (1-200).',
         },
       },
       additionalProperties: false,
@@ -70,6 +71,7 @@ export function listExpensesTool(widgetUris: { expenseTable: string }) {
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,

@@ -56,6 +56,7 @@ export function startUpgradeTool() {
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/toolInvocation/invoking': 'Generating upgrade link…',

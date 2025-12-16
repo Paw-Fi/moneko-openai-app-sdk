@@ -92,6 +92,7 @@ export function saveExpenseTool(widgetUris: { budget: string }) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.budget,

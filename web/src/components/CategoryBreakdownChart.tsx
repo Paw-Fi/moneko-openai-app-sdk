@@ -40,6 +40,7 @@ export function CategoryBreakdownChart() {
   const props = useWidgetProps<CategoryBreakdownChartProps>();
   const [isListLoading, setIsListLoading] = useState(false);
   const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!props || !props.breakdown || props.breakdown.length === 0) {
     return (
@@ -80,6 +81,7 @@ export function CategoryBreakdownChart() {
 
   const handleSeeAllTransactions = async () => {
     setIsListLoading(true);
+    setErrorMessage(null);
     try {
       await callTool("moneko.list_expenses", {
         startDate: timeWindow.startDate,
@@ -89,7 +91,7 @@ export function CategoryBreakdownChart() {
       // After this call, OpenAI will render the ExpenseTableCompact widget
     } catch (err) {
       console.error("Failed to list expenses:", err);
-      alert("Failed to load transactions. Please try again.");
+      setErrorMessage("Failed to load transactions. Please try again.");
     } finally {
       setIsListLoading(false);
     }
@@ -97,6 +99,7 @@ export function CategoryBreakdownChart() {
 
   const handleUpgrade = async () => {
     setIsUpgradeLoading(true);
+    setErrorMessage(null);
     try {
       const response = await callTool("moneko.start_upgrade", {});
       const result = JSON.parse(response.result);
@@ -106,7 +109,7 @@ export function CategoryBreakdownChart() {
       }
     } catch (err) {
       console.error("Failed to start upgrade:", err);
-      alert("Failed to start upgrade. Please try again.");
+      setErrorMessage("Failed to start upgrade. Please try again.");
     } finally {
       setIsUpgradeLoading(false);
     }
@@ -123,6 +126,12 @@ export function CategoryBreakdownChart() {
             : "Current period"}
         </p>
       </header>
+
+      {errorMessage && (
+        <div className="form-error" role="alert" aria-live="polite">
+          {errorMessage}
+        </div>
+      )}
 
       {/* Breakdown by Currency */}
       {breakdown.map((currencyBreakdown, idx) => (

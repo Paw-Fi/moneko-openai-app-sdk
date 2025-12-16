@@ -84,6 +84,7 @@ export function deleteExpenseTool(widgetUris: { expenseTable: string }) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
+      openWorldHint: false,
     },
     _meta: {
       'openai/outputTemplate': widgetUris.expenseTable,

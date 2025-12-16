@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && tsx scripts/build-html.ts",
+    "build": "tsc && vite build && node scripts/build-html.mjs",
     "build:vite": "vite build",
-    "build:html": "tsx scripts/build-html.ts",
+    "build:html": "node scripts/build-html.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

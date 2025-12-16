@@ -151,3 +151,30 @@ export interface CategoryBreakdownChartProps {
   };
   breakdown: CategoryBreakdown[];
 }
+
+export interface SubscriptionSummary {
+  subscribed: boolean;
+  plan: string;
+  status: string;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
+}
+
+export interface MembershipWidgetProps {
+  view: "paywall" | "member";
+  message?: string;
+  subscription?: {
+    plan: string;
+    status: string;
+    currentPeriodEnd?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  } | null;
+}
+
+export interface AppShellToolOutput {
+  tab?: "overview" | "transactions" | "categories" | "budget" | "insights" | "membership";
+  authenticated?: boolean;
+  subscription?: SubscriptionSummary | null;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+}
