@@ -9,23 +9,27 @@
  * ✅ System colors
  * ✅ Semantic form elements with proper labels
  * ✅ ARIA roles and live regions for errors
- *
- * Per Section C.1.6:
- * - Controlled from ExpenseTableCompact
- * - Fields: category, amount, date, description
- * - On submit: Calls moneko.update_expense
- * - Then triggers a refresh via moneko.list_expenses
  */
 
 import { useState, useEffect } from "react";
 import { callTool } from "../lib/bridge";
 import type { ExpenseRow } from "../lib/types";
 
+// Shadcn UI Components
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Alert, AlertDescription } from "./ui/alert";
+
+type EditableExpense = ExpenseRow & { expenseRef: string };
+
 interface EditExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  expense: ExpenseRow | null;
+  expense: EditableExpense | null;
   onSuccess: () => void;
+  refreshWindow?: { startDate: string | null; endDate: string | null; currency: string | null } | null;
 }
 
 export function EditExpenseModal({
@@ -33,6 +37,7 @@ export function EditExpenseModal({
   onClose,
   expense,
   onSuccess,
+  refreshWindow,
 }: EditExpenseModalProps) {
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -89,8 +94,9 @@ export function EditExpenseModal({
       }
 
       await callTool("moneko.update_expense", {
-        expenseId: expense.id,
+        expenseRef: expense.expenseRef,
         updates,
+        refreshWindow: refreshWindow ?? undefined,
       });
 
       onSuccess();
@@ -104,55 +110,40 @@ export function EditExpenseModal({
     }
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen || !expense) return null;
 
   return (
-    <div
-      className="modal-overlay"
-      onClick={handleOverlayClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-expense-title"
-    >
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2 id="edit-expense-title">Edit Expense</h2>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close modal"
-            disabled={isSubmitting}
-          >
-            ×
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Expense</DialogTitle>
+          <DialogDescription>
+            Modify details for this transaction.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label htmlFor="expense-category">Category</label>
-              <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expense-category" className="text-right">
+                Category
+              </Label>
+              <Input
                 id="expense-category"
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 disabled={isSubmitting}
                 required
+                className="col-span-3"
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="expense-amount">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expense-amount" className="text-right">
                 Amount ({expense.currency})
-              </label>
-              <input
+              </Label>
+              <Input
                 id="expense-amount"
                 type="number"
                 step="0.01"
@@ -161,58 +152,56 @@ export function EditExpenseModal({
                 onChange={(e) => setAmount(e.target.value)}
                 disabled={isSubmitting}
                 required
+                className="col-span-3"
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="expense-date">Date</label>
-              <input
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expense-date" className="text-right">
+                Date
+              </Label>
+              <Input
                 id="expense-date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 disabled={isSubmitting}
                 required
+                className="col-span-3"
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="expense-description">Description</label>
-              <input
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expense-description" className="text-right">
+                Description
+              </Label>
+              <Input
                 id="expense-description"
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={isSubmitting}
+                className="col-span-3"
               />
             </div>
-
-            {error && (
-              <div className="form-error" role="alert" aria-live="assertive">
-                {error}
-              </div>
-            )}
           </div>
 
-          <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

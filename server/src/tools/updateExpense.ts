@@ -3,6 +3,7 @@ import { UpdateExpenseInput } from '../schemas.js';
 import { proxy } from '../lib/proxy.js';
 import { toExpenseTablePayload } from '../lib/transform.js';
 import { logger } from '../lib/logger.js';
+import { parseExpenseRef } from '../lib/refs.js';
 
 /**
  * Register the moneko.update_expense tool
@@ -18,8 +19,13 @@ export function registerUpdateExpense(server: Server, widgetUris: { expenseTable
 
       logger.info({ args, refreshWindow }, 'Calling moneko.update_expense');
 
+      const expenseId = parseExpenseRef(args.expenseRef);
+      if (!expenseId) {
+        throw new Error('Invalid expense reference. Refresh the list and try again.');
+      }
+
       // Update the expense
-      await proxy('/update-expense', { expenseId: args.expenseId, updates: args.updates }, request.meta?.headers ?? {}, true);
+      await proxy('/update-expense', { expenseId, updates: args.updates }, request.meta?.headers ?? {}, true);
 
       // Re-fetch the expense list with the same window
       const listPayload = await proxy(
@@ -33,7 +39,7 @@ export function registerUpdateExpense(server: Server, widgetUris: { expenseTable
         true
       );
 
-      const props = toExpenseTablePayload(listPayload);
+      const { props, expenseRefs } = toExpenseTablePayload(listPayload);
 
       return {
         content: [
@@ -44,6 +50,7 @@ export function registerUpdateExpense(server: Server, widgetUris: { expenseTable
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
           'openai/resultCanProduceWidget': true,
+          'moneko/expenseRefs': expenseRefs,
           'openai/toolInvocation/invoking': 'Updating expense…',
           'openai/toolInvocation/invoked': 'Expense updated.',
         },
@@ -63,9 +70,9 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
     inputSchema: {
       type: 'object',
       properties: {
-        expenseId: {
+        expenseRef: {
           type: 'string',
-          description: 'UUID of the expense to update',
+          description: 'Opaque expense reference from the widget (do not ask the user for IDs).',
         },
         updates: {
           type: 'object',
@@ -105,7 +112,7 @@ export function updateExpenseTool(widgetUris: { expenseTable: string }) {
           additionalProperties: false,
         },
       },
-      required: ['expenseId', 'updates'],
+      required: ['expenseRef', 'updates'],
       additionalProperties: false,
     },
     annotations: {

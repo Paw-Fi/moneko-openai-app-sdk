@@ -88,7 +88,7 @@ export type SetBudgetInput = z.infer<typeof SetBudgetInput>;
  * At least one update field must be provided
  */
 export const UpdateExpenseInput = z.object({
-  expenseId: z.string().uuid(),
+  expenseRef: z.string().startsWith('exp_'),
   updates: z.object({
     amount_cents: z.number().int().positive().optional(),
     category: z.string().optional(),
@@ -104,7 +104,7 @@ export type UpdateExpenseInput = z.infer<typeof UpdateExpenseInput>;
  * Schema for deleting expenses
  */
 export const DeleteExpenseInput = z.object({
-  expenseId: z.string().uuid(),
+  expenseRef: z.string().startsWith('exp_'),
 });
 
 export type DeleteExpenseInput = z.infer<typeof DeleteExpenseInput>;

@@ -115,7 +115,6 @@ export interface BudgetStatusCardProps {
 }
 
 export interface ExpenseRow {
-  id: string;
   date: string;
   description: string;
   category: string;

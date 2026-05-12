@@ -106,13 +106,14 @@ describe('Transform Functions', () => {
 
       const result = toExpenseTablePayload(input);
 
-      expect(result.rows).toHaveLength(2);
-      expect(result.rows[0].id).toBe('123');
-      expect(result.rows[0].amountMajor).toBe(4.50);
-      expect(result.rows[1].description).toBe('Bus ticket');
-      expect(result.rows[1].amountMajor).toBe(2.50);
-      expect(result.window.startDate).toBe('2025-10-01');
-      expect(result.window.currency).toBe('EUR');
+      expect(result.props.rows).toHaveLength(2);
+      expect(result.expenseRefs).toHaveLength(2);
+      expect(result.expenseRefs[0]).toMatch(/^exp_/);
+      expect(result.props.rows[0].amountMajor).toBe(4.5);
+      expect(result.props.rows[1].description).toBe('Bus ticket');
+      expect(result.props.rows[1].amountMajor).toBe(2.5);
+      expect(result.props.window.startDate).toBe('2025-10-01');
+      expect(result.props.window.currency).toBe('EUR');
     });
 
     it('should handle empty data', () => {
@@ -122,8 +123,9 @@ describe('Transform Functions', () => {
 
       const result = toExpenseTablePayload(input);
 
-      expect(result.rows).toHaveLength(0);
-      expect(result.window.startDate).toBeNull();
+      expect(result.props.rows).toHaveLength(0);
+      expect(result.expenseRefs).toHaveLength(0);
+      expect(result.props.window.startDate).toBeNull();
     });
   });
 

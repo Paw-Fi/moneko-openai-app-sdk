@@ -1,3 +1,16 @@
+/**
+ * AppShell Component
+ *
+ * DESIGN GUIDELINES COMPLIANCE:
+ * ✅ Mobile-first responsive layout (max-width wrapper)
+ * ✅ Sticky navigation tabs
+ * ✅ System font stack & Apple-like aesthetic
+ * ✅ Smooth transitions for tab switching
+ * ✅ Dark mode support via Tailwind
+ * ✅ Semantic HTML structure (main, nav, header)
+ * ✅ Accessible touch targets
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { callTool, openExternal, requestDisplayMode, sendFollowUpMessage } from "../lib/bridge";
 import { useOpenAiGlobal, useTheme, useWidgetProps } from "../lib/hooks";
@@ -8,6 +21,19 @@ import type {
   ExpenseTableCompactProps,
   MembershipWidgetProps,
 } from "../lib/types";
+
+// Import Refactored Components
+import { BudgetStatusCard } from "../components/BudgetStatusCard";
+import { CategoryBreakdownChart } from "../components/CategoryBreakdownChart";
+import { ExpenseTableCompact } from "../components/ExpenseTableCompact";
+
+// Shadcn UI Components
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
 
 interface Tab {
   id: NonNullable<AppShellToolOutput["tab"]>;
@@ -108,6 +134,7 @@ async function supabaseSignUp(cfg: { supabaseUrl: string; supabaseAnonKey: strin
 
 export function AppShell() {
   const theme = useTheme();
+  
   const toolOutput = useWidgetProps<AppShellToolOutput>() ?? {};
   const widgetState = useOpenAiGlobal("widgetState") as any;
 
@@ -122,9 +149,10 @@ export function AppShell() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [isAuthBusy, setIsAuthBusy] = useState(false);
 
+  // Data States
   const [membership, setMembership] = useState<MembershipWidgetProps | null>(null);
   const [isRefreshingGate, setIsRefreshingGate] = useState(false);
-
+  
   const [summary, setSummary] = useState<CategoryBreakdownChartProps | null>(null);
   const [transactions, setTransactions] = useState<ExpenseTableCompactProps | null>(null);
   const [budget, setBudget] = useState<BudgetStatusCardProps | null>(null);
@@ -137,6 +165,13 @@ export function AppShell() {
     if (!supabaseUrl || !supabaseAnonKey) return null;
     return { supabaseUrl, supabaseAnonKey };
   }, [toolOutput.supabaseUrl, toolOutput.supabaseAnonKey]);
+
+  const [supabaseCfgStable, setSupabaseCfgStable] = useState<typeof supabaseCfg>(null);
+  useEffect(() => {
+    if (supabaseCfg) setSupabaseCfgStable(supabaseCfg);
+  }, [supabaseCfg]);
+
+  const supabaseCfgForAuth = supabaseCfgStable ?? supabaseCfg;
 
   const isAuthed = Boolean(toolOutput.authenticated) || Boolean(membership);
   const isSubscribed = Boolean(toolOutput.subscription?.subscribed) || Boolean(membership && membership.view === "member");
@@ -212,22 +247,18 @@ export function AppShell() {
   };
 
   useEffect(() => {
-    // On first mount, refresh membership state (so the app shell works even if opened without toolOutput.subscription).
     void refreshAuthAndMembership();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!isSubscribed) return;
-    // Preload overview/budget once subscribed.
     void (async () => {
       try {
         await Promise.all([summary ? Promise.resolve() : loadOverview(), budget ? Promise.resolve() : loadBudget()]);
       } catch {
-        // ignore; each page handles its own errors
+        // ignore
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSubscribed]);
 
   const gate = membership ?? (toolOutput.subscription?.subscribed === false ? ({ view: "paywall", message: "Upgrade to continue." } as MembershipWidgetProps) : null);
@@ -246,7 +277,6 @@ export function AppShell() {
   useEffect(() => {
     const normalized = ensureUsableTab(tab);
     if (normalized !== tab) setTabPersisted(normalized);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSubscribed]);
 
   const onRequestFullscreen = async () => {
@@ -258,7 +288,7 @@ export function AppShell() {
     setAuthError(null);
     setAuthSuccess(null);
     try {
-      if (!supabaseCfg) {
+      if (!supabaseCfgForAuth) {
         throw new Error("Missing Supabase configuration. Ask Moneko to open the app again.");
       }
       const cleanEmail = email.trim();
@@ -269,8 +299,8 @@ export function AppShell() {
 
       const data =
         authMode === "sign_in"
-          ? await supabasePasswordGrant(supabaseCfg, cleanEmail, cleanPassword)
-          : await supabaseSignUp(supabaseCfg, cleanEmail, cleanPassword);
+          ? await supabasePasswordGrant(supabaseCfgForAuth, cleanEmail, cleanPassword)
+          : await supabaseSignUp(supabaseCfgForAuth, cleanEmail, cleanPassword);
 
       const accessToken = data?.access_token || data?.session?.access_token;
       if (!accessToken) {
@@ -337,359 +367,345 @@ export function AppShell() {
     await sendFollowUpMessage("Show my Moneko membership and upgrade options.");
   };
 
+  // --- RENDERERS ---
+
   const renderAuth = () => (
-    <div className="app-card app-auth" role="article" aria-label="Sign in to Moneko">
-      <div className="app-card-header">
-        <div className="app-title">Sign in to Moneko</div>
-        <div className="app-subtitle">Use your Moneko account to save and view your data in this ChatGPT chat.</div>
-      </div>
+    <Card className="mx-auto w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Sign in to Moneko</CardTitle>
+        <CardDescription>
+          Use your Moneko account to save and view your data in this ChatGPT chat.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {authError && (
+          <Alert variant="destructive">
+            <AlertDescription>{authError}</AlertDescription>
+          </Alert>
+        )}
+        {authSuccess && (
+          <Alert className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
+            <AlertDescription>{authSuccess}</AlertDescription>
+          </Alert>
+        )}
 
-      {authError && (
-        <div className="form-error" role="alert" aria-live="polite">
-          {authError}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={authMode === "sign_in" ? "current-password" : "new-password"}
+            />
+          </div>
+
+          <Button 
+            className="w-full"
+            onClick={onAuthSubmit} 
+            disabled={isAuthBusy}
+          >
+            {isAuthBusy ? "Working…" : authMode === "sign_in" ? "Sign in" : "Create account"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => setAuthMode((m) => (m === "sign_in" ? "sign_up" : "sign_in"))}
+            disabled={isAuthBusy}
+          >
+            {authMode === "sign_in" ? "Create an account" : "I already have an account"}
+          </Button>
+
+          <div className="text-xs text-center text-muted-foreground mt-4">
+            {supabaseCfgForAuth ? (
+              <>This sign-in happens inside the widget. Your password is sent directly to Supabase Auth.</>
+            ) : (
+              <>Missing Supabase configuration. Ask Moneko to open the app again.</>
+            )}
+          </div>
         </div>
-      )}
-      {authSuccess && (
-        <div className="form-success" role="status" aria-live="polite">
-          {authSuccess}
-        </div>
-      )}
-
-      <div className="app-form">
-        <label className="app-label">
-          Email
-          <input className="app-input" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        </label>
-        <label className="app-label">
-          Password
-          <input
-            className="app-input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={authMode === "sign_in" ? "current-password" : "new-password"}
-          />
-        </label>
-
-        <button className="btn btn-primary" type="button" onClick={onAuthSubmit} disabled={isAuthBusy}>
-          {isAuthBusy ? "Working…" : authMode === "sign_in" ? "Sign in" : "Create account"}
-        </button>
-
-        <button
-          className="btn btn-secondary"
-          type="button"
-          onClick={() => setAuthMode((m) => (m === "sign_in" ? "sign_up" : "sign_in"))}
-          disabled={isAuthBusy}
-        >
-          {authMode === "sign_in" ? "Create an account" : "I already have an account"}
-        </button>
-
-        <div className="app-hint">
-          {supabaseCfg ? (
-            <>This sign-in happens inside the widget. Your password is sent directly to Supabase Auth.</>
-          ) : (
-            <>Missing Supabase configuration. Ask Moneko to open the app again.</>
-          )}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   const renderPaywall = () => (
-    <div className="app-card" role="article" aria-label="Upgrade to Moneko Plus">
-      <div className="app-card-header">
-        <div className="app-title">Unlock Moneko in ChatGPT</div>
-        <div className="app-subtitle">
+    <Card className="mx-auto w-full max-w-2xl">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Unlock Moneko in ChatGPT</CardTitle>
+        <CardDescription className="max-w-lg mx-auto">
           Start a 30-day free trial (eligible accounts) or subscribe now. Checkout opens on moneko.io.
-        </div>
-      </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {authError && (
+            <Alert variant="destructive">
+            <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+        )}
 
-      {authError && (
-        <div className="form-error" role="alert" aria-live="polite">
-          {authError}
-        </div>
-      )}
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="relative flex flex-col justify-between rounded-lg border-2 border-primary bg-background p-6 shadow-sm">
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2" variant="default">
+              Best value
+            </Badge>
+            <div className="space-y-2">
+              <h3 className="font-bold">Plus Annual</h3>
+              <div className="text-2xl font-bold">$49 <span className="text-sm font-normal text-muted-foreground">/ year</span></div>
+              <p className="text-xs text-muted-foreground">Includes a 30-day free trial if eligible.</p>
+            </div>
+            <Button className="mt-4 w-full" onClick={() => onStartCheckout("plus", "yearly")}>
+              Start trial
+            </Button>
+          </div>
+          
+          <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
+            <div className="space-y-2">
+              <h3 className="font-bold">Plus Monthly</h3>
+              <div className="text-2xl font-bold">$7.99 <span className="text-sm font-normal text-muted-foreground">/ mon</span></div>
+              <p className="text-xs text-muted-foreground">Try free for 30 days if eligible.</p>
+            </div>
+            <Button variant="outline" className="mt-4 w-full" onClick={() => onStartCheckout("plus", "monthly")}>
+              Subscribe
+            </Button>
+          </div>
 
-      <div className="plans">
-        <div className="plan plan-featured">
-          <div className="plan-badge">Best value</div>
-          <div className="plan-name">Plus Annual</div>
-          <div className="plan-price">$49 / year</div>
-          <div className="plan-note">Includes a 30-day free trial if eligible.</div>
-          <button className="btn btn-primary" type="button" onClick={() => onStartCheckout("plus", "yearly")}>
-            Start trial
-          </button>
+          <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
+            <div className="space-y-2">
+              <h3 className="font-bold">Lifetime</h3>
+              <div className="text-2xl font-bold">$149 <span className="text-sm font-normal text-muted-foreground">one-time</span></div>
+              <p className="text-xs text-muted-foreground">Founder plan. No recurring billing.</p>
+            </div>
+            <Button variant="outline" className="mt-4 w-full" onClick={() => onStartCheckout("lifetime")}>
+              Buy lifetime
+            </Button>
+          </div>
         </div>
-        <div className="plan">
-          <div className="plan-name">Plus Monthly</div>
-          <div className="plan-price">$7.99 / month</div>
-          <div className="plan-note">Try free for 30 days if eligible.</div>
-          <button className="btn btn-secondary" type="button" onClick={() => onStartCheckout("plus", "monthly")}>
-            Subscribe
-          </button>
-        </div>
-        <div className="plan">
-          <div className="plan-name">Lifetime</div>
-          <div className="plan-price">$149 one-time</div>
-          <div className="plan-note">Founder plan. No recurring billing.</div>
-          <button className="btn btn-secondary" type="button" onClick={() => onStartCheckout("lifetime")}>
-            Buy lifetime
-          </button>
-        </div>
-      </div>
 
-      <div className="paywall-actions">
-        <button className="btn btn-secondary" type="button" onClick={refreshAuthAndMembership} disabled={isRefreshingGate}>
-          {isRefreshingGate ? "Refreshing…" : "I’ve subscribed — refresh"}
-        </button>
-        <button className="btn btn-secondary" type="button" onClick={onAskChatToOpenMembership}>
-          Open membership in chat
-        </button>
-      </div>
-    </div>
+        <div className="flex justify-center gap-4 pt-4 border-t items-center">
+          <Button variant="link" onClick={refreshAuthAndMembership} disabled={isRefreshingGate}>
+             {isRefreshingGate ? "Refreshing…" : "I’ve subscribed — refresh"}
+          </Button>
+          <div className="w-px h-4 bg-border my-auto"></div>
+          <Button variant="link" onClick={onAskChatToOpenMembership}>
+             Open membership in chat
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 
   const renderOverview = () => {
     const startDate = startOfMonthUtcIso();
     const endDate = todayUtcIso();
-    const primary = summary?.breakdown?.[0];
-    const totals = primary?.totals || [];
-    const bento = totals
-      .slice()
-      .sort((a, b) => (b.share || 0) - (a.share || 0))
-      .slice(0, 6);
 
     return (
-      <div className="page">
-        <div className="page-header">
-          <div className="page-title">This month</div>
-          <div className="page-subtitle">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl font-bold tracking-tight">This month</h2>
+          <p className="text-sm text-muted-foreground">
             {startDate} → {endDate}
-          </div>
+          </p>
         </div>
 
-        <div className="grid">
-          <div className="card">
-            <div className="card-title">Top spending</div>
-            <div className="bento" role="list" aria-label="Top categories">
-              {bento.length === 0 ? (
-                <div className="muted">No data yet. Try logging an expense.</div>
-              ) : (
-                bento.map((t) => (
-                  <div
-                    key={t.category}
-                    className="bento-tile"
-                    style={{ gridRowEnd: `span ${Math.max(1, Math.round((t.share || 0) * 6))}` }}
-                    role="listitem"
-                  >
-                    <div className="bento-name">{t.category}</div>
-                    <div className="bento-amount">{t.amountMajor.toFixed(2)}</div>
-                    <div className="bento-share">{Math.round((t.share || 0) * 100)}%</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-title">Budget pacing</div>
-            {budget ? (
-              <>
-                <div className="kpi">{budget.remainingTodayMajor.toFixed(2)} remaining today</div>
-                <div className="muted">
-                  Daily budget {budget.dailyBudgetMajor.toFixed(2)} • Spent {budget.spentToDateMajor.toFixed(2)}
-                </div>
-              </>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Top Spending / Breakdown Widget */}
+          <div className="lg:col-span-2">
+            {summary ? (
+              <CategoryBreakdownChart {...summary} />
             ) : (
-              <button className="btn btn-secondary" type="button" onClick={() => void loadBudget()}>
-                Load budget
-              </button>
+               <div className="flex h-64 w-full items-center justify-center rounded-xl bg-muted/20 border border-border/50 animate-pulse text-muted-foreground text-sm">
+                 <p>Loading summary...</p>
+                 <Button variant="link" onClick={() => void loadOverview()}>Retry</Button>
+               </div>
             )}
           </div>
 
-          <div className="card">
-            <div className="card-title">Quick actions</div>
-            <div className="quick-actions">
-              <button className="btn btn-primary" type="button" onClick={() => setTabPersisted("transactions")}>
-                View transactions
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={() => setTabPersisted("budget")}>
-                Edit budget
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={onRequestFullscreen}>
-                Fullscreen
-              </button>
-            </div>
+          {/* Budget Pacing */}
+          <div className="space-y-6">
+             {budget ? (
+               <BudgetStatusCard {...budget} />
+             ) : (
+                <Card className="text-center p-6">
+                   <CardContent className="pt-6">
+                    <Button onClick={() => void loadBudget()}>Load Budget</Button>
+                   </CardContent>
+                </Card>
+             )}
           </div>
+          
+          <Card className="p-6">
+             <CardHeader className="p-0 mb-4">
+                <CardTitle className="text-lg">Quick actions</CardTitle>
+             </CardHeader>
+             <CardContent className="p-0 flex flex-col gap-2">
+                <Button onClick={() => setTabPersisted("transactions")}>
+                   View transactions
+                </Button>
+                <Button variant="outline" onClick={() => setTabPersisted("budget")}>
+                   Edit budget
+                </Button>
+                 <Button variant="outline" onClick={onRequestFullscreen}>
+                   Fullscreen
+                </Button>
+             </CardContent>
+          </Card>
         </div>
       </div>
     );
   };
-
+  
   const renderTransactions = () => (
-    <div className="page">
-      <div className="page-header">
-        <div className="page-title">Transactions</div>
-        <div className="page-subtitle">Edit and delete transactions. Changes sync to your account.</div>
+    <div className="space-y-4 h-[calc(100vh-140px)] flex flex-col">
+       <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Transactions</h2>
+        <p className="text-sm text-muted-foreground">Edit and delete transactions. Changes sync to your account.</p>
       </div>
-
-      <div className="card">
-        {transactions ? (
-          <div className="tx-list" role="list" aria-label="Transactions list">
-            {transactions.rows.map((r) => (
-              <div className="tx-row" key={r.id} role="listitem">
-                <div className="tx-main">
-                  <div className="tx-desc">{r.description || "—"}</div>
-                  <div className="tx-meta">
-                    <span>{r.category}</span>
-                    <span>•</span>
-                    <span>{r.date}</span>
-                  </div>
-                </div>
-                <div className="tx-amt">
-                  {new Intl.NumberFormat(undefined, { style: "currency", currency: r.currency }).format(r.amountMajor)}
-                </div>
-              </div>
-            ))}
-            <div className="muted">For edit/delete, open the dedicated Transactions widget from chat.</div>
-            <button
-              className="btn btn-secondary"
-              type="button"
-              onClick={() => void sendFollowUpMessage("Show my recent transactions list with edit/delete controls.")}
-            >
-              Open full table
-            </button>
-          </div>
-        ) : (
-          <button className="btn btn-primary" type="button" onClick={() => void loadTransactions()}>
-            Load transactions
-          </button>
-        )}
+      
+      <div className="flex-1 overflow-hidden rounded-xl border bg-card shadow-sm relative">
+         {transactions ? (
+            <ExpenseTableCompact {...transactions} />
+         ) : (
+            <div className="flex h-full items-center justify-center">
+               <Button onClick={() => void loadTransactions()}>
+                  Load transactions
+               </Button>
+            </div>
+         )}
       </div>
     </div>
   );
 
   const renderCategories = () => (
-    <div className="page">
-      <div className="page-header">
-        <div className="page-title">Categories</div>
-        <div className="page-subtitle">Your category list for logging expenses.</div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
+        <p className="text-sm text-muted-foreground">Your category list for logging expenses.</p>
       </div>
-      <div className="card">
+      <Card>
+        <CardContent className="p-6">
         {categories ? (
-          <div className="pill-grid" role="list" aria-label="Category list">
-            {categories.map((c) => (
-              <div className="pill" key={c} role="listitem">
-                {c}
-              </div>
-            ))}
-            <button
-              className="btn btn-secondary"
-              type="button"
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2" role="list" aria-label="Category list">
+              {categories.map((c) => (
+                <Badge key={c} variant="secondary">
+                  {c}
+                </Badge>
+              ))}
+            </div>
+            <Button
+              variant="outline"
               onClick={() => void sendFollowUpMessage("Show my categories and let me add new ones.")}
             >
               Manage categories
-            </button>
+            </Button>
           </div>
         ) : (
-          <button className="btn btn-primary" type="button" onClick={() => void loadCategories()}>
+          <Button onClick={() => void loadCategories()}>
             Load categories
-          </button>
+          </Button>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
   const renderBudget = () => (
-    <div className="page">
-      <div className="page-header">
-        <div className="page-title">Budget</div>
-        <div className="page-subtitle">Check pacing, then update your daily budget from chat.</div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Budget</h2>
+        <p className="text-sm text-muted-foreground">Check pacing, then update your daily budget from chat.</p>
       </div>
-      <div className="card">
+      <div className="max-w-md mx-auto">
         {budget ? (
-          <>
-            <div className="kpi">
-              {new Intl.NumberFormat(undefined, { style: "currency", currency: budget.currency }).format(budget.remainingTodayMajor)}{" "}
-              remaining today
-            </div>
-            <div className="muted">
-              Daily budget{" "}
-              {new Intl.NumberFormat(undefined, { style: "currency", currency: budget.currency }).format(budget.dailyBudgetMajor)} •
-              Month projection{" "}
-              {new Intl.NumberFormat(undefined, { style: "currency", currency: budget.currency }).format(budget.projectedMonthRemainingMajor)}
-            </div>
-            <div className="quick-actions">
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => void sendFollowUpMessage("Set my daily budget to $15 starting today.")}
-              >
-                Update budget
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={() => void loadBudget()}>
-                Refresh
-              </button>
-            </div>
-          </>
+           <BudgetStatusCard {...budget} />
         ) : (
-          <button className="btn btn-primary" type="button" onClick={() => void loadBudget()}>
-            Load budget
-          </button>
+          <Card className="text-center p-6">
+             <CardContent className="pt-6">
+                <Button onClick={() => void loadBudget()}>
+                Load budget
+                </Button>
+             </CardContent>
+          </Card>
         )}
       </div>
+        {/* Helper buttons if needed */}
+         <div className="flex justify-center gap-2">
+            <Button
+                 onClick={() => void sendFollowUpMessage("Set my daily budget to $15 starting today.")}
+               >
+                 Update budget
+            </Button>
+            <Button variant="outline" onClick={() => void loadBudget()}>
+                 Refresh
+           </Button>
+         </div>
     </div>
   );
 
   const renderInsights = () => (
-    <div className="page">
-      <div className="page-header">
-        <div className="page-title">Insights</div>
-        <div className="page-subtitle">A quick monthly snapshot with next steps.</div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Insights</h2>
+        <p className="text-sm text-muted-foreground">A quick monthly snapshot with next steps.</p>
       </div>
-      <div className="card">
-        <button className="btn btn-primary" type="button" onClick={() => void loadInsights()}>
-          Generate snapshot
-        </button>
-        {insightsText && <pre className="insight-pre">{insightsText}</pre>}
-      </div>
+      <Card>
+        <CardContent className="p-6 space-y-4">
+            <Button onClick={() => void loadInsights()}>
+            Generate snapshot
+            </Button>
+            {insightsText && <pre className="whitespace-pre-wrap font-mono text-xs text-muted-foreground bg-muted p-4 rounded-lg overflow-auto">{insightsText}</pre>}
+        </CardContent>
+      </Card>
+      {summary && <CategoryBreakdownChart {...summary} />}
     </div>
   );
 
   const renderMembership = () => (
-    <div className="page">
-      <div className="page-header">
-        <div className="page-title">Membership</div>
-        <div className="page-subtitle">Manage billing or upgrade your plan.</div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Membership</h2>
+        <p className="text-sm text-muted-foreground">Manage billing or upgrade your plan.</p>
       </div>
-      <div className="card">
+      <Card>
+        <CardContent className="p-6 space-y-6">
         {gate?.subscription ? (
-          <div className="muted">
-            Plan: <strong>{gate.subscription.plan}</strong> • Status: <strong>{gate.subscription.status}</strong>
+          <div className="text-sm text-muted-foreground">
+            Plan: <strong className="text-foreground">{gate.subscription.plan}</strong> • Status: <strong className="text-foreground">{gate.subscription.status}</strong>
           </div>
         ) : (
-          <div className="muted">Membership details not loaded yet.</div>
+          <div className="text-sm text-muted-foreground">Membership details not loaded yet.</div>
         )}
-        <div className="quick-actions">
-          <button className="btn btn-secondary" type="button" onClick={refreshAuthAndMembership} disabled={isRefreshingGate}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={refreshAuthAndMembership} disabled={isRefreshingGate}>
             {isRefreshingGate ? "Refreshing…" : "Refresh status"}
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={onOpenBillingPortal} disabled={!isSubscribed}>
+          </Button>
+          <Button variant="outline" onClick={onOpenBillingPortal} disabled={!isSubscribed}>
             Billing portal
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={onSignOut}>
+          </Button>
+          <Button variant="outline" onClick={onSignOut}>
             Sign out
-          </button>
+          </Button>
         </div>
-        {!isSubscribed && <div className="muted">Upgrade required to use budgeting features inside ChatGPT.</div>}
+        {!isSubscribed && <div className="text-sm text-amber-600 dark:text-amber-400">Upgrade required to use budgeting features inside ChatGPT.</div>}
         {!isSubscribed && renderPaywall()}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
   const renderContent = () => {
-    if (!isAuthed) return renderAuth();
-    if (!isSubscribed) return renderPaywall();
+     if (!isAuthed) return renderAuth();
+     if (!isSubscribed) return renderPaywall();
 
     switch (tab) {
       case "overview":
@@ -708,52 +724,52 @@ export function AppShell() {
   };
 
   return (
-    <div className={`app-shell ${theme}`} role="application" aria-label="Moneko app">
-      <div className="app-bg" aria-hidden="true" />
-      <header className="app-topbar">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true">
-            M
-          </div>
-          <div className="brand-text">
-            <div className="brand-name">Moneko</div>
-            <div className="brand-tagline">{isSubscribed ? "Budgeting inside ChatGPT" : "Start your free trial"}</div>
-          </div>
-        </div>
-        <div className="top-actions">
-          <button className="btn btn-secondary btn-compact" type="button" onClick={refreshAuthAndMembership} disabled={isRefreshingGate}>
-            {isRefreshingGate ? "…" : "Refresh"}
-          </button>
-          <button className="btn btn-secondary btn-compact" type="button" onClick={onRequestFullscreen}>
-            Fullscreen
-          </button>
+    <div className={`min-h-screen bg-background font-sans text-foreground antialiased ${theme}`} role="application" aria-label="Moneko app">
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">M</div>
+                <div className="hidden sm:block">
+                    <div className="text-sm font-semibold leading-none">Moneko</div>
+                    <div className="text-[10px] text-muted-foreground">{isSubscribed ? "Budgeting AI" : "Start trial"}</div>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+               <Button variant="ghost" size="icon" className="rounded-full" onClick={refreshAuthAndMembership} disabled={isRefreshingGate} title="Refresh">
+                   <svg className={`h-4 w-4 ${isRefreshingGate ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+               </Button>
+               <Button variant="ghost" size="icon" className="rounded-full" onClick={onRequestFullscreen} title="Fullscreen">
+                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+               </Button>
+            </div>
         </div>
       </header>
 
       {isAuthed && (
-        <nav className="tabs" role="tablist" aria-label="Moneko navigation">
-          {TABS.map((t) => {
-            const disabled = !canUseTab(t);
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={`tab ${active ? "active" : ""}`}
-                role="tab"
-                aria-selected={active}
-                aria-disabled={disabled}
-                disabled={disabled}
-                onClick={() => setTabPersisted(t.id)}
-              >
-                {t.label}
-              </button>
-            );
-          })}
+        <nav className="sticky top-14 z-30 w-full border-b bg-background">
+          <div className="container flex h-10 items-center overflow-x-auto px-1 no-scrollbar">
+            {TABS.map((t) => {
+              const disabled = !canUseTab(t);
+              const active = tab === t.id;
+              return (
+                <Button
+                  key={t.id}
+                  variant={active ? "default" : "ghost"}
+                  size="sm"
+                  className={`rounded-sm px-3 py-1.5 h-auto text-sm font-medium ${active ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground hover:text-foreground"} ${disabled ? "pointer-events-none opacity-50" : ""}`}
+                  onClick={() => setTabPersisted(t.id)}
+                  disabled={disabled}
+                >
+                  {t.label}
+                </Button>
+              );
+            })}
+          </div>
         </nav>
       )}
 
-      <main className="app-main">{renderContent()}</main>
+      <main className="container p-4 md:p-6 pb-20 max-w-5xl mx-auto">{renderContent()}</main>
     </div>
   );
 }

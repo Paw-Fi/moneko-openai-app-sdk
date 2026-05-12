@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import fg from "fast-glob";
 import path from "node:path";
 import fs from "node:fs";
+import tailwindcss from '@tailwindcss/vite'
 
 function buildInputs() {
   const files = fg.sync("src/**/index.{tsx,jsx}", {
@@ -195,12 +196,33 @@ if (!window.__vite_plugin_react_preamble_installed__) {
   };
 }
 
-const inputs = buildInputs();
+function buildEntryFor(command: "build" | "serve"): Record<string, string> {
+  // Production: ship a single self-contained bundle that can mount into any widget root.
+  // This matches Apps SDK best practice: a single runtime JS/CSS pair referenced by widget HTML.
+  if (command === "build") {
+    return {
+      "widget-runtime": path.resolve("src/widget-runtime/index.tsx"),
+    };
+  }
 
-export default defineConfig((): UserConfig => ({
-  plugins: [react(), multiEntryDevEndpoints({ entries: inputs })],
-  cacheDir: "node_modules/.vite-moneko",
-  server: {
+  // Development: keep multi-entry endpoints for quickly previewing widgets in the browser.
+  return buildInputs();
+}
+
+export default defineConfig(({ command }): UserConfig => {
+  const entries = buildEntryFor(command === "build" ? "build" : "serve");
+  return {
+    resolve: {
+      alias: {
+        "@": path.resolve("./src"),
+      },
+    },
+    plugins:
+      command === "build"
+        ? [react(), tailwindcss()]
+        : [react(), multiEntryDevEndpoints({ entries }), tailwindcss()],
+    cacheDir: "node_modules/.vite-moneko",
+    server: {
     port: 4445,
     strictPort: true,
     cors: true,
@@ -217,13 +239,15 @@ export default defineConfig((): UserConfig => ({
     outDir: "dist",
     assetsDir: ".",
     rollupOptions: {
-      input: inputs,
+      input: entries,
       output: {
         entryFileNames: "[name].js",
         chunkFileNames: "[name]-[hash].js",
         assetFileNames: "[name].[ext]",
+        ...(command === "build" ? { inlineDynamicImports: true } : {}),
       },
       preserveEntrySignatures: "strict",
     },
   },
-}));
+  };
+});

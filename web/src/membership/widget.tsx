@@ -3,6 +3,12 @@ import { callTool, openExternal, sendFollowUpMessage } from "../lib/bridge";
 import { useWidgetProps } from "../lib/hooks";
 import type { MembershipWidgetProps } from "../lib/types";
 
+// Shadcn UI Components
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+
 function parseToolJson(result: string): { structuredContent?: any } {
   try {
     return JSON.parse(result || "{}");
@@ -76,85 +82,98 @@ export function MembershipWidget() {
   const subscription = viewProps.subscription || null;
 
   return (
-    <div className="membership" role="article" aria-label="Moneko membership">
-      <header className="membership-header">
-        <h1 className="membership-title">Membership</h1>
-        <p className="membership-subtitle">
+    <Card className="mx-auto w-full max-w-2xl" role="article" aria-label="Moneko membership">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Membership</CardTitle>
+        <CardDescription className="max-w-lg mx-auto">
           {viewProps.view === "member"
             ? "You’re subscribed. Manage billing or open the app."
             : "Start a 30-day free trial (eligible accounts) or subscribe to unlock Moneko inside ChatGPT."}
-        </p>
-      </header>
+        </CardDescription>
+      </CardHeader>
 
-      {viewProps.message && <div className="membership-message">{viewProps.message}</div>}
-      {error && (
-        <div className="form-error" role="alert" aria-live="polite">
-          {error}
-        </div>
-      )}
+      <CardContent className="space-y-6">
+        {viewProps.message && <div className="text-sm text-center text-muted-foreground bg-muted p-2 rounded-md">{viewProps.message}</div>}
+        {error && (
+            <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
 
-      {viewProps.view === "member" ? (
-        <div className="membership-card">
-          <div className="membership-row">
-            <span className="membership-label">Plan</span>
-            <span className="membership-value">{subscription?.plan || "—"}</span>
-          </div>
-          <div className="membership-row">
-            <span className="membership-label">Status</span>
-            <span className="membership-value">{subscription?.status || "—"}</span>
-          </div>
-          <div className="membership-actions">
-            <button className="btn btn-primary" type="button" onClick={openApp} disabled={isBusy}>
-              Open app
-            </button>
-            <button className="btn btn-secondary" type="button" onClick={openPortal} disabled={isBusy}>
-              Billing portal
-            </button>
-            <button className="btn btn-secondary" type="button" onClick={refresh} disabled={isBusy}>
-              Refresh
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="plans">
-            <div className="plan plan-featured">
-              <div className="plan-badge">Best value</div>
-              <div className="plan-name">Plus Annual</div>
-              <div className="plan-price">$49 / year</div>
-              <div className="plan-note">Includes a 30-day free trial if eligible.</div>
-              <button className="btn btn-primary" type="button" onClick={() => startCheckout("plus", "yearly")} disabled={isBusy}>
-                Start trial
-              </button>
+        {viewProps.view === "member" ? (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center text-sm border-b pb-2">
+              <span className="text-muted-foreground">Plan</span>
+              <span className="font-medium text-foreground">{subscription?.plan || "—"}</span>
             </div>
-            <div className="plan">
-              <div className="plan-name">Plus Monthly</div>
-              <div className="plan-price">$7.99 / month</div>
-              <div className="plan-note">Try free for 30 days if eligible.</div>
-              <button className="btn btn-secondary" type="button" onClick={() => startCheckout("plus", "monthly")} disabled={isBusy}>
-                Subscribe
-              </button>
+            <div className="flex justify-between items-center text-sm border-b pb-2">
+              <span className="text-muted-foreground">Status</span>
+              <span className="font-medium text-foreground">{subscription?.status || "—"}</span>
             </div>
-            <div className="plan">
-              <div className="plan-name">Lifetime</div>
-              <div className="plan-price">$149 one-time</div>
-              <div className="plan-note">Founder plan. No recurring billing.</div>
-              <button className="btn btn-secondary" type="button" onClick={() => startCheckout("lifetime")} disabled={isBusy}>
-                Buy lifetime
-              </button>
+            <div className="flex flex-wrap gap-2 justify-center pt-2">
+              <Button onClick={openApp} disabled={isBusy}>
+                Open app
+              </Button>
+              <Button variant="outline" onClick={openPortal} disabled={isBusy}>
+                Billing portal
+              </Button>
+              <Button variant="outline" onClick={refresh} disabled={isBusy}>
+                Refresh
+              </Button>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="relative flex flex-col justify-between rounded-lg border-2 border-primary bg-background p-6 shadow-sm">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2" variant="default">
+                  Best value
+                </Badge>
+                <div className="space-y-2">
+                  <h3 className="font-bold">Plus Annual</h3>
+                  <div className="text-2xl font-bold">$49 <span className="text-sm font-normal text-muted-foreground">/ year</span></div>
+                  <p className="text-xs text-muted-foreground">Includes a 30-day free trial if eligible.</p>
+                </div>
+                <Button className="mt-4 w-full" onClick={() => startCheckout("plus", "yearly")} disabled={isBusy}>
+                  Start trial
+                </Button>
+              </div>
+              
+              <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
+                <div className="space-y-2">
+                  <h3 className="font-bold">Plus Monthly</h3>
+                  <div className="text-2xl font-bold">$7.99 <span className="text-sm font-normal text-muted-foreground">/ mon</span></div>
+                  <p className="text-xs text-muted-foreground">Try free for 30 days if eligible.</p>
+                </div>
+                <Button variant="outline" className="mt-4 w-full" onClick={() => startCheckout("plus", "monthly")} disabled={isBusy}>
+                  Subscribe
+                </Button>
+              </div>
 
-          <div className="membership-actions">
-            <button className="btn btn-secondary" type="button" onClick={refresh} disabled={isBusy}>
-              {isBusy ? "…" : "I’ve subscribed — refresh"}
-            </button>
-            <button className="btn btn-secondary" type="button" onClick={openApp} disabled={isBusy}>
-              Open app
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+              <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
+                <div className="space-y-2">
+                  <h3 className="font-bold">Lifetime</h3>
+                  <div className="text-2xl font-bold">$149 <span className="text-sm font-normal text-muted-foreground">one-time</span></div>
+                  <p className="text-xs text-muted-foreground">Founder plan. No recurring billing.</p>
+                </div>
+                <Button variant="outline" className="mt-4 w-full" onClick={() => startCheckout("lifetime")} disabled={isBusy}>
+                  Buy lifetime
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-4 border-t items-center">
+              <Button variant="link" onClick={refresh} disabled={isBusy}>
+                {isBusy ? "Refreshing…" : "I’ve subscribed — refresh"}
+              </Button>
+              <div className="w-px h-4 bg-border my-auto"></div>
+              <Button variant="link" onClick={openApp} disabled={isBusy}>
+                Open app
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

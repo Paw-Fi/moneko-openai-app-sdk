@@ -1,6 +1,7 @@
 /**
  * Transform functions to convert Supabase responses into widget props
  */
+import { makeExpenseRef } from './refs.js';
 
 /**
  * Round to 2 decimal places
@@ -48,8 +49,9 @@ export function toBudgetStatusCard(result: any) {
  */
 export function toExpenseTablePayload(result: any) {
   const data = result?.data ?? [];
+  const expenseRefs = data.map((row: any) => (row?.id ? makeExpenseRef(String(row.id)) : null));
+
   const rows = data.map((row: any) => ({
-    id: row.id,
     date: row.date,
     description: row.description ?? row.raw_text ?? "",
     category: row.category,
@@ -57,7 +59,7 @@ export function toExpenseTablePayload(result: any) {
     currency: row.currency,
   }));
 
-  return {
+  const props = {
     rows,
     window: {
       startDate: result?.meta?.filters?.startDate ?? null,
@@ -65,6 +67,8 @@ export function toExpenseTablePayload(result: any) {
       currency: result?.meta?.filters?.currency ?? null,
     },
   };
+
+  return { props, expenseRefs };
 }
 
 /**

@@ -263,8 +263,21 @@ function ensureJsonContentType(req: IncomingMessage) {
 }
 
 function guessBaseUrl(req: IncomingMessage): string {
-  const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || 'localhost').split(',')[0].trim();
-  const rawProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = req.headers[k as keyof typeof req.headers];
+      if (!v) continue;
+      const s = Array.isArray(v) ? String(v[v.length - 1] ?? '') : String(v);
+      const out = s.split(',')[0].trim();
+      if (out) return out;
+    }
+    return '';
+  };
+
+  const rawHost =
+    pick('x-forwarded-host', 'x-original-host', 'x-host') ||
+    String(req.headers.host || 'localhost').split(',')[0].trim();
+  const rawProto = pick('x-forwarded-proto', 'x-forwarded-scheme', 'x-scheme');
   const proto = rawProto || (rawHost.startsWith('localhost') || rawHost.startsWith('127.0.0.1') ? 'http' : 'https');
   return `${proto}://${rawHost}`;
 }

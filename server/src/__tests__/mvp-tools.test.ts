@@ -86,7 +86,7 @@ describe('MVP Tools + Widgets', () => {
     await server.close();
   });
 
-  it('serves widget resources with resolved asset base URL', async () => {
+  it('serves widget resources with inlined runtime', async () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const server = createMonekoServer();
     await server.connect(serverTransport);
@@ -96,8 +96,12 @@ describe('MVP Tools + Widgets', () => {
 
     const expenseWidget = await client.readResource({ uri: 'ui://widget/expense-table.html' });
     const expenseHtml = (expenseWidget.contents[0] as any).text as string;
-    expect(expenseHtml).toContain('https://public.example.com/assets/expense-table.js');
+    expect(expenseHtml).toContain('id="expense-table-root"');
+    expect(expenseHtml).toContain('<style>');
+    expect(expenseHtml).toContain('<script type="module">');
+    expect(expenseHtml).toContain('__moneko_widget_runtime_mounted');
     expect(expenseHtml).not.toContain('__MONEKO_ASSET_BASE_URL__');
+    expect(expenseHtml).not.toContain('/assets/expense-table.js');
 
     const categoriesWidget = await client.readResource({ uri: 'ui://widget/categories.html' });
     const categoriesHtml = (categoriesWidget.contents[0] as any).text as string;

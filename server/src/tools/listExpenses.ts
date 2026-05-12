@@ -17,7 +17,7 @@ export function registerListExpenses(server: Server, widgetUris: { expenseTable:
 
       const payload = await proxy('/list-expenses', args, request.meta?.headers ?? {}, true);
 
-      const props = toExpenseTablePayload(payload);
+      const { props, expenseRefs } = toExpenseTablePayload(payload);
 
       return {
         content: [
@@ -28,6 +28,7 @@ export function registerListExpenses(server: Server, widgetUris: { expenseTable:
           'openai/outputTemplate': widgetUris.expenseTable,
           'openai/widgetAccessible': true,
           'openai/resultCanProduceWidget': true,
+          'moneko/expenseRefs': expenseRefs,
           // Hint the host that this call is safe and should not require an extra approval
           'openai/toolInvocation/invoking': 'Loading your expenses…',
           'openai/toolInvocation/invoked': 'Expenses loaded.',

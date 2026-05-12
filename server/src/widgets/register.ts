@@ -6,13 +6,6 @@ import { logger } from '../lib/logger.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const ASSET_BASE_URL_PLACEHOLDER = '__MONEKO_ASSET_BASE_URL__';
-const DEFAULT_WIDGET_CSP =
-  "default-src 'self'; " +
-  "connect-src 'self' https:; " +
-  "img-src 'self' data: https:; " +
-  "style-src 'self' 'unsafe-inline'; " +
-  "script-src 'self' 'unsafe-inline'; " +
-  "frame-ancestors 'none';";
 
 /**
  * Widget metadata
@@ -38,91 +31,43 @@ export interface WidgetUris {
   chart: string;
 }
 
-function readFileIfExists(p: string): string | null {
-  try {
-    if (!fs.existsSync(p)) return null;
-    return fs.readFileSync(p, 'utf8');
-  } catch {
-    return null;
-  }
-}
-
-function loadWidgetCss(projectRoot: string, widgetKey: string): string {
-  const globalCssPath = path.join(projectRoot, 'web', 'src', 'styles.css');
-  const widgetCssPath = path.join(projectRoot, 'web', 'src', widgetKey, 'styles.css');
-  const globalCss = readFileIfExists(globalCssPath) ?? '';
-  const widgetCss = readFileIfExists(widgetCssPath) ?? '';
-  const combined = [globalCss, widgetCss].filter(Boolean).join('\n\n');
-  return combined;
+function buildCssMissingBanner(): string {
+  return `<div class="moneko-css-missing" role="alert" style="padding:12px;margin:0 0 12px 0;border:1px solid #fecaca;border-radius:12px;background:#fff1f2;color:#7f1d1d;font:13px/1.4 system-ui,sans-serif;">
+  Styles are not loading. This widget expects a compiled <code>&lt;style&gt;</code> tag to be present and applied.
+</div>`;
 }
 
 function buildWidgetHtml(options: {
   title: string;
   rootId: string;
-  entryJsFile: string;
+  runtimeJs: string;
   css: string;
 }): string {
-  const { title, rootId, entryJsFile, css } = options;
-  const scriptSrc = `${ASSET_BASE_URL_PLACEHOLDER}/assets/${entryJsFile}`;
+  const { title, rootId, runtimeJs, css } = options;
+  const safeRuntimeJs = runtimeJs.replace(/<\/script>/gi, '<\\/script>');
 
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <style>${css}</style>
-</head>
-<body>
-  <div id="${rootId}">
-    <div data-widget-boot="1" style="padding:12px;color:var(--color-text-secondary, #6b7280);font:14px system-ui,sans-serif;">
-      Loading…
-    </div>
+  return `
+${buildCssMissingBanner()}
+<div id="${rootId}">
+  <div data-widget-boot="1" style="padding:12px;color:var(--color-text-secondary, #6b7280);font:14px system-ui,sans-serif;">
+    Loading…
   </div>
-  <script>
-    (function () {
-      var root = document.getElementById(${JSON.stringify(rootId)});
-      if (!root) return;
-      // If the module bundle fails to load (bad public base URL / blocked script),
-      // don't leave the user staring at a blank widget.
-      window.setTimeout(function () {
-        try {
-          var boot = root.querySelector && root.querySelector('[data-widget-boot="1"]');
-          if (!boot) return; // React mounted, or boot already replaced.
-          boot.textContent = 'This widget did not load. Try “Refresh”, or ask: “Open the Moneko app dashboard”.';
-        } catch {}
-      }, 1500);
-    })();
-  </script>
-  <script type="module" crossorigin="anonymous" src="${scriptSrc}"></script>
-</body>
-</html>
+</div>
+<style>${css}</style>
+<script type="module">${safeRuntimeJs}</script>
 `;
 }
 
 function buildCategoriesWidgetHtml(css: string): string {
-  const extraCss = `
-.categories-card{max-width:600px;margin:0 auto;padding:var(--space-lg)}
-.categories-header{display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-lg)}
-.categories-title{font-size:var(--font-size-xl);font-weight:700}
-.categories-subtitle{font-size:var(--font-size-sm);color:var(--color-text-secondary)}
-.categories-form{display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-lg)}
-.categories-input{flex:1;min-height:40px;padding:var(--space-sm) var(--space-md);border:1px solid var(--color-border);border-radius:var(--border-radius-md);background:var(--color-bg);color:var(--color-text)}
-.categories-input:focus{outline:2px solid var(--color-primary);outline-offset:2px}
-.categories-list{display:flex;flex-wrap:wrap;gap:var(--space-sm);list-style:none;margin:0;padding:0}
-.categories-pill{padding:var(--space-xs) var(--space-md);border:1px solid var(--color-border);border-radius:999px;background:var(--color-bg-secondary);font-size:var(--font-size-sm)}
-.categories-error{margin-top:var(--space-md);color:var(--color-error);font-size:var(--font-size-sm)}
-`.trim();
-
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Categories</title>
-  <style>${css}\n\n${extraCss}</style>
 </head>
 <body>
+  ${buildCssMissingBanner()}
   <div id="categories-root" class="categories-card">
     <div class="categories-header">
       <div class="categories-title">Categories</div>
@@ -140,6 +85,13 @@ function buildCategoriesWidgetHtml(css: string): string {
 
   <script>
     (function () {
+      function applyTheme() {
+        try {
+          var theme = window.openai && window.openai.theme;
+          if (theme) document.documentElement.setAttribute('data-theme', String(theme));
+        } catch {}
+      }
+
       var listEl = document.getElementById('categories-list');
       var formEl = document.getElementById('categories-form');
       var inputEl = document.getElementById('categories-name');
@@ -192,6 +144,7 @@ function buildCategoriesWidgetHtml(css: string): string {
 
       function onSetGlobals(e) {
         try {
+          applyTheme();
           var globals = e && e.detail && e.detail.globals;
           if (!globals || globals.toolOutput === undefined) return;
           render(currentCategories());
@@ -218,43 +171,27 @@ function buildCategoriesWidgetHtml(css: string): string {
         });
       }
 
+      applyTheme();
       window.addEventListener('openai:set_globals', onSetGlobals, { passive: true });
       render(currentCategories());
     })();
   </script>
+  <style>${css}</style>
 </body>
 </html>
 `;
 }
 
 function buildAuthWidgetHtml(css: string): string {
-  const extraCss = `
-.auth-card{max-width:520px;margin:0 auto;padding:var(--space-lg)}
-.auth-header{display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-lg)}
-.auth-title{font-size:var(--font-size-xl);font-weight:700}
-.auth-subtitle{font-size:var(--font-size-sm);color:var(--color-text-secondary)}
-.auth-form{display:flex;flex-direction:column;gap:var(--space-md)}
-.auth-row{display:flex;flex-direction:column;gap:var(--space-xs)}
-.auth-label{font-size:var(--font-size-sm);color:var(--color-text-secondary)}
-.auth-input{min-height:40px;padding:var(--space-sm) var(--space-md);border:1px solid var(--color-border);border-radius:var(--border-radius-md);background:var(--color-bg);color:var(--color-text)}
-.auth-input:focus{outline:2px solid var(--color-primary);outline-offset:2px}
-.auth-actions{display:flex;gap:var(--space-sm);align-items:center;justify-content:space-between}
-.auth-link{background:transparent;border:none;padding:0;color:var(--color-primary);font-size:var(--font-size-sm);cursor:pointer}
-.auth-link:hover{text-decoration:underline}
-.auth-hint{font-size:var(--font-size-sm);color:var(--color-text-secondary);line-height:1.4}
-.auth-error{margin-top:var(--space-md);color:var(--color-error);font-size:var(--font-size-sm)}
-.auth-success{margin-top:var(--space-md);color:var(--color-success);font-size:var(--font-size-sm)}
-`.trim();
-
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign in</title>
-  <style>${css}\n\n${extraCss}</style>
 </head>
 <body>
+  ${buildCssMissingBanner()}
   <div id="auth-root" class="auth-card">
     <div class="auth-header">
       <div class="auth-title" id="auth-title">Sign in to Moneko</div>
@@ -298,6 +235,13 @@ function buildAuthWidgetHtml(css: string): string {
       var successEl = document.getElementById('auth-success');
 
       var mode = 'sign_in'; // or sign_up
+
+      function applyTheme() {
+        try {
+          var theme = window.openai && window.openai.theme;
+          if (theme) document.documentElement.setAttribute('data-theme', String(theme));
+        } catch {}
+      }
 
       function getToolOutput() {
         try { return (window.openai && window.openai.toolOutput) || {}; } catch { return {}; }
@@ -406,16 +350,8 @@ function buildAuthWidgetHtml(css: string): string {
           }
 
           await callTool('moneko.set_auth_session', { access_token: accessToken });
-          setSuccess('Signed in. Opening your Moneko dashboard…');
+          setSuccess('Signed in. You can return to the chat and continue.');
           if (passEl) passEl.value = '';
-
-          try {
-            if (window.openai && window.openai.sendFollowUpMessage) {
-              await window.openai.sendFollowUpMessage({ prompt: 'Open the Moneko app dashboard.' });
-            }
-          } catch {
-            // ignore
-          }
         } catch (err) {
           setError(err && err.message ? err.message : 'Authentication failed.');
         } finally {
@@ -436,40 +372,30 @@ function buildAuthWidgetHtml(css: string): string {
       }
 
       window.addEventListener('openai:set_globals', function () {
+        applyTheme();
         renderMode();
       }, { passive: true });
 
+      applyTheme();
       renderMode();
     })();
   </script>
+  <style>${css}</style>
 </body>
 </html>
 `;
 }
 
 function buildChartWidgetHtml(css: string): string {
-  const extraCss = `
-.chart-card{max-width:720px;margin:0 auto;padding:var(--space-lg)}
-.chart-header{display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)}
-.chart-title{font-size:var(--font-size-xl);font-weight:700}
-.chart-subtitle{font-size:var(--font-size-sm);color:var(--color-text-secondary);line-height:1.4}
-.chart-canvas-wrap{background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--border-radius-lg);padding:var(--space-md)}
-.chart-canvas{width:100%;height:auto;display:block}
-.chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-top:var(--space-md);list-style:none;padding:0}
-.chart-legend-item{display:flex;align-items:center;gap:var(--space-xs);font-size:var(--font-size-sm);color:var(--color-text-secondary)}
-.chart-swatch{width:10px;height:10px;border-radius:3px;background:var(--color-border)}
-.chart-empty{color:var(--color-text-secondary);font-size:var(--font-size-sm)}
-`.trim();
-
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chart</title>
-  <style>${css}\n\n${extraCss}</style>
 </head>
 <body>
+  ${buildCssMissingBanner()}
   <div id="chart-root" class="chart-card">
     <div class="chart-header">
       <div id="chart-title" class="chart-title">Chart</div>
@@ -493,6 +419,13 @@ function buildChartWidgetHtml(css: string): string {
       var subtitleEl = document.getElementById('chart-subtitle');
 
       var COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#64748b','#22c55e'];
+
+      function applyTheme() {
+        try {
+          var theme = window.openai && window.openai.theme;
+          if (theme) document.documentElement.setAttribute('data-theme', String(theme));
+        } catch {}
+      }
 
       function getToolOutput() {
         try { return (window.openai && window.openai.toolOutput) || null; } catch { return null; }
@@ -645,12 +578,15 @@ function buildChartWidgetHtml(css: string): string {
       }
 
       window.addEventListener('openai:set_globals', function () {
+        applyTheme();
         render();
       }, { passive: true });
 
+      applyTheme();
       render();
     })();
   </script>
+  <style>${css}</style>
 </body>
 </html>
 `;
@@ -660,7 +596,7 @@ function buildChartWidgetHtml(css: string): string {
  * Register all widget resources and return their URIs
  */
 export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris } {
-  // Find the web/dist directory (contains built HTML with inlined JS/CSS)
+  // Find the web/dist directory (contains built JS/CSS assets for the widgets)
   // Server is at moneko-openai-app-sdk/server
   // Web is at moneko-openai-app-sdk/web
   const serverRoot = path.resolve(__dirname, '..', '..');
@@ -676,7 +612,7 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
 
   logger.info({ webDir }, 'Loading widget HTML from directory');
 
-  const requiredJs = ['app-shell.js', 'membership.js', 'budget-status.js', 'category-breakdown.js', 'expense-table.js'];
+  const requiredJs = ['widget-runtime.js'];
   for (const jsFile of requiredJs) {
     const fullPath = path.join(webDir, jsFile);
     if (!fs.existsSync(fullPath)) {
@@ -687,6 +623,16 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
     }
   }
 
+  const runtimeCssPath = path.join(webDir, 'widget-runtime.css');
+  if (!fs.existsSync(runtimeCssPath)) {
+    throw new Error(
+      `Widget CSS asset not found: ${runtimeCssPath}. ` +
+      `Run "pnpm --filter web build" to generate the widget bundles.`
+    );
+  }
+  const runtimeJs = fs.readFileSync(path.join(webDir, 'widget-runtime.js'), 'utf8');
+  const runtimeCss = fs.readFileSync(runtimeCssPath, 'utf8');
+
   const widgets: WidgetMetadata[] = [
     {
       uri: 'ui://widget/app.html',
@@ -695,8 +641,8 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
       html: buildWidgetHtml({
         title: 'Moneko',
         rootId: 'app-shell-root',
-        entryJsFile: 'app-shell.js',
-        css: loadWidgetCss(projectRoot, 'app-shell'),
+        runtimeJs,
+        css: runtimeCss,
       }),
     },
     {
@@ -706,8 +652,8 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
       html: buildWidgetHtml({
         title: 'Budget Status Card',
         rootId: 'budget-status-root',
-        entryJsFile: 'budget-status.js',
-        css: loadWidgetCss(projectRoot, 'budget-status'),
+        runtimeJs,
+        css: runtimeCss,
       }),
     },
     {
@@ -717,8 +663,8 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
       html: buildWidgetHtml({
         title: 'Category Breakdown',
         rootId: 'category-breakdown-root',
-        entryJsFile: 'category-breakdown.js',
-        css: loadWidgetCss(projectRoot, 'category-breakdown'),
+        runtimeJs,
+        css: runtimeCss,
       }),
     },
     {
@@ -728,15 +674,15 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
       html: buildWidgetHtml({
         title: 'Expense Table',
         rootId: 'expense-table-root',
-        entryJsFile: 'expense-table.js',
-        css: loadWidgetCss(projectRoot, 'expense-table'),
+        runtimeJs,
+        css: runtimeCss,
       }),
     },
     {
       uri: 'ui://widget/categories.html',
       name: 'Categories',
       description: 'List and manage expense categories',
-      html: buildCategoriesWidgetHtml(readFileIfExists(path.join(projectRoot, 'web', 'src', 'styles.css')) ?? ''),
+      html: buildCategoriesWidgetHtml(runtimeCss),
     },
     {
       uri: 'ui://widget/membership.html',
@@ -745,21 +691,21 @@ export function registerWidgets(): { widgets: WidgetMetadata[]; uris: WidgetUris
       html: buildWidgetHtml({
         title: 'Membership',
         rootId: 'membership-root',
-        entryJsFile: 'membership.js',
-        css: loadWidgetCss(projectRoot, 'membership'),
+        runtimeJs,
+        css: runtimeCss,
       }),
     },
     {
       uri: 'ui://widget/auth.html',
       name: 'Sign in',
       description: 'Sign in or create a Moneko account in this chat',
-      html: buildAuthWidgetHtml(readFileIfExists(path.join(projectRoot, 'web', 'src', 'styles.css')) ?? ''),
+      html: buildAuthWidgetHtml(runtimeCss),
     },
     {
       uri: 'ui://widget/chart.html',
       name: 'Chart',
       description: 'Generic chart widget (bar/pie/donut) rendered locally',
-      html: buildChartWidgetHtml(readFileIfExists(path.join(projectRoot, 'web', 'src', 'styles.css')) ?? ''),
+      html: buildChartWidgetHtml(runtimeCss),
     },
   ];
 

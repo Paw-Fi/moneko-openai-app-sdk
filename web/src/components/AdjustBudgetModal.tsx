@@ -9,18 +9,17 @@
  * ✅ System colors
  * ✅ Semantic form elements with proper labels
  * ✅ ARIA roles and live regions for errors
- *
- * Modal for adjusting daily budget.
- * Controlled from BudgetStatusCard.
- *
- * Per Section C.1.5:
- * - Fields: new daily budget amount (number), currency (prefilled), date (prefilled = today)
- * - On submit: Calls moneko.set_budget
- * - Replaces local card props with returned result
  */
 
 import { useState, useEffect } from "react";
 import { callTool } from "../lib/bridge";
+
+// Shadcn UI Components
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Alert, AlertDescription } from "./ui/alert";
 
 interface AdjustBudgetModalProps {
   isOpen: boolean;
@@ -69,17 +68,11 @@ export function AdjustBudgetModal({
         date,
       });
 
-      // AUDIT FIX: After server fix, structuredContent IS the props directly
-      // The host will automatically update window.openai.toolOutput with the new props
-      // We parse response.result to optionally update local state for smoother UX
       const result = JSON.parse(response.result);
       if (result.structuredContent) {
-        // structuredContent is now the props object directly (not wrapped)
         onSuccess(result.structuredContent);
         onClose();
       } else {
-        // If no structuredContent, host will still update toolOutput automatically
-        // Close modal and let host-driven re-render handle it
         onClose();
       }
     } catch (err) {
@@ -91,43 +84,23 @@ export function AdjustBudgetModal({
     }
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="modal-overlay"
-      onClick={handleOverlayClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="adjust-budget-title"
-    >
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2 id="adjust-budget-title">Adjust Daily Budget</h2>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close modal"
-            disabled={isSubmitting}
-          >
-            ×
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Adjust Daily Budget</DialogTitle>
+          <DialogDescription>
+            Set your daily spending target for {date}.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label htmlFor="budget-amount">
-                Daily Budget ({currency})
-              </label>
-              <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="budget-amount" className="text-right">
+                Amount
+              </Label>
+              <Input
                 id="budget-amount"
                 type="number"
                 step="0.01"
@@ -135,47 +108,34 @@ export function AdjustBudgetModal({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 disabled={isSubmitting}
+                className="col-span-3"
                 autoFocus
                 required
               />
             </div>
-
-            <div className="form-info">
-              <p className="form-hint">
-                Date: {date}
-              </p>
-              <p className="form-hint">
-                This will set your daily spending target. You'll be able to
-                track your progress throughout the month.
-              </p>
-            </div>
-
-            {error && (
-              <div className="form-error" role="alert" aria-live="assertive">
-                {error}
-              </div>
+            {currency && (
+               <div className="text-xs text-muted-foreground text-right">
+                  Currency: {currency}
+               </div>
             )}
           </div>
 
-          <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter>
+             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Updating..." : "Update Budget"}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

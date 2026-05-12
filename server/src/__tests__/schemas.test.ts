@@ -130,7 +130,7 @@ describe('Schema Validation', () => {
   describe('UpdateExpenseInput', () => {
     it('should validate with at least one update field', () => {
       const input = {
-        expenseId: '550e8400-e29b-41d4-a716-446655440000',
+        expenseRef: 'exp_dummy_ref',
         updates: {
           category: 'Transport',
         },
@@ -140,15 +140,15 @@ describe('Schema Validation', () => {
 
     it('should reject empty updates', () => {
       const input = {
-        expenseId: '550e8400-e29b-41d4-a716-446655440000',
+        expenseRef: 'exp_dummy_ref',
         updates: {},
       };
       expect(() => UpdateExpenseInput.parse(input)).toThrow();
     });
 
-    it('should reject invalid UUID', () => {
+    it('should reject invalid expenseRef', () => {
       const input = {
-        expenseId: 'not-a-uuid',
+        expenseRef: 'not-a-ref',
         updates: {
           category: 'Transport',
         },
@@ -158,16 +158,16 @@ describe('Schema Validation', () => {
   });
 
   describe('DeleteExpenseInput', () => {
-    it('should validate correct UUID', () => {
+    it('should validate correct expenseRef', () => {
       const input = {
-        expenseId: '550e8400-e29b-41d4-a716-446655440000',
+        expenseRef: 'exp_dummy_ref',
       };
       expect(() => DeleteExpenseInput.parse(input)).not.toThrow();
     });
 
-    it('should reject invalid UUID', () => {
+    it('should reject invalid expenseRef', () => {
       const input = {
-        expenseId: 'not-a-uuid',
+        expenseRef: 'not-a-ref',
       };
       expect(() => DeleteExpenseInput.parse(input)).toThrow();
     });
